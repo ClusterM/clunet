@@ -12,3 +12,4 @@
 *.sym
 bootloader.m8/
 bootloader/
+.gitignore
