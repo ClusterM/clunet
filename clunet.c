@@ -1,4 +1,4 @@
-п»ї/* Name: clunet.c
+/* Name: clunet.c
  * Project: CLUNET network driver
  * Author: Alexey Avdyukhin
  * Creation Date: 2013-07-22
@@ -55,73 +55,73 @@ char check_crc(char* data, unsigned char size)
 
 ISR(CLUNET_TIMER_COMP_VECTOR)
 {		
-	unsigned char now = CLUNET_TIMER_REG;     // Р—Р°РїРѕРјРёРЅР°РµРј С‚РµРєСѓС‰РµРµ РІСЂРµРјСЏ
+	unsigned char now = CLUNET_TIMER_REG;     // Запоминаем текущее время
 	
 	switch (clunetSendingState)
 	{
-		case CLUNET_SENDING_STATE_PREINIT: // РќСѓР¶РЅРѕ РїРѕРґРѕР¶РґР°С‚СЊ РїРµСЂРµРґ РѕС‚РїСЂР°РІРєРѕР№
+		case CLUNET_SENDING_STATE_PREINIT: // Нужно подождать перед отправкой
 			CLUNET_TIMER_REG_OCR = now + CLUNET_T;	
-			clunetSendingState = CLUNET_SENDING_STATE_INIT;  // РќР°С‡РёРЅР°РµРј СЃР»РµРґСѓСЋС‰СѓСЋ С„Р°Р·Сѓ
+			clunetSendingState = CLUNET_SENDING_STATE_INIT;  // Начинаем следующую фазу
 			return;	
-		case CLUNET_SENDING_STATE_STOP:	// Р—Р°РІРµСЂС€РµРЅРёРµ РїРµСЂРµРґР°С‡Рё, РЅРѕ РЅР°РґРѕ РµС‰С‘ РїРѕРґРѕР¶РґР°С‚СЊ
-			CLUNET_SEND_0;				// РћС‚РїСѓСЃРєР°РµРј Р»РёРЅРёСЋ
+		case CLUNET_SENDING_STATE_STOP:	// Завершение передачи, но надо ещё подождать
+			CLUNET_SEND_0;				// Отпускаем линию
 			CLUNET_TIMER_REG_OCR = now + CLUNET_T;
 			clunetSendingState = CLUNET_SENDING_STATE_DONE;
 			return;
-		case CLUNET_SENDING_STATE_DONE:	// Р—Р°РІРµСЂС€РµРЅРёРµ РїРµСЂРµРґР°С‡Рё
-			CLUNET_DISABLE_TIMER_COMP; // Р’С‹РєР»СЋС‡Р°РµРј С‚Р°Р№РјРµСЂ-СЃСЂР°РІРЅРµРЅРёРµ
-			clunetSendingState = CLUNET_SENDING_STATE_IDLE; // РЎС‚Р°РІРёРј С„Р»Р°Рі, С‡С‚Рѕ РїРµСЂРµРґР°С‚С‡РёРє СЃРІРѕР±РѕРґРµРЅ
+		case CLUNET_SENDING_STATE_DONE:	// Завершение передачи
+			CLUNET_DISABLE_TIMER_COMP; // Выключаем таймер-сравнение
+			clunetSendingState = CLUNET_SENDING_STATE_IDLE; // Ставим флаг, что передатчик свободен
 			return;		
 	}	
 
-	if (/*!((clunetReadingState == CLUNET_READING_STATE_DATA) && // Р•СЃР»Рё РјС‹ СЃРµР№С‡Р°СЃ РЅРµ [РїРѕР»СѓС‡Р°РµРј РґР°РЅРЅС‹Рµ
-		(clunetCurrentPrio > clunetReceivingPrio) 				// Р РїСЂРёРѕСЂРёС‚РµС‚ РїРѕР»СѓС‡Р°РµРјС‹С… РґР°РЅРЅС‹С… РЅРµ РЅРёР¶Рµ
-		&& (clunetSendingState == CLUNET_SENDING_STATE_INIT))  // Р РјС‹ РЅРµ РїС‹С‚Р°РµРјСЃСЏ РЅР°С‡Р°С‚СЊ РёРЅРёС†РёР°Р»РёР·Р°С†РёСЋ]		
-		&&*/ (!CLUNET_SENDING && CLUNET_READING)) // РўРѕ РёРґС‘С‚ РїСЂРѕРІРµСЂРєР° РЅР° РєРѕРЅС„Р»РёРєС‚. Р•СЃР»Рё РјС‹ Р»РёРЅРёСЋ РЅРµ РґРµСЂР¶РёРј, РЅРѕ РѕРЅР° СѓР¶Рµ Р·Р°РЅСЏС‚Р°
+	if (/*!((clunetReadingState == CLUNET_READING_STATE_DATA) && // Если мы сейчас не [получаем данные
+		(clunetCurrentPrio > clunetReceivingPrio) 				// И приоритет получаемых данных не ниже
+		&& (clunetSendingState == CLUNET_SENDING_STATE_INIT))  // И мы не пытаемся начать инициализацию]		
+		&&*/ (!CLUNET_SENDING && CLUNET_READING)) // То идёт проверка на конфликт. Если мы линию не держим, но она уже занята
 	{
-		CLUNET_DISABLE_TIMER_COMP; // Р’С‹РєР»СЋС‡Р°РµРј С‚Р°Р№РјРµСЂ-СЃСЂР°РІРЅРµРЅРёРµ
-		clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE; // РџРµСЂРµС…РѕРґРёРј РІ СЂРµР¶РёРј РѕР¶РёРґР°РЅРёСЏ Р»РёРЅРёРё
-		return;											 // Р СѓРјРѕР»РєР°РµРј
+		CLUNET_DISABLE_TIMER_COMP; // Выключаем таймер-сравнение
+		clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE; // Переходим в режим ожидания линии
+		return;											 // И умолкаем
 	}
 
-	CLUNET_SEND_INVERT;	 // РЎСЂР°Р·Сѓ РёРЅРІСЂС‚РёСЂСѓРµРј Р·РЅР°С‡РµРЅРёРµ СЃРёРіРЅР°Р»Р°, Сѓ РЅР°СЃ СЌС‚Рѕ Р·Р°РїР»Р°РЅРёСЂРѕРІР°РЅРѕ
+	CLUNET_SEND_INVERT;	 // Сразу инвртируем значение сигнала, у нас это запланировано
 	
-	if (!CLUNET_SENDING)        // Р•СЃР»Рё РјС‹ РѕС‚РїСѓСЃС‚РёР»Рё Р»РёРЅРёСЋ...
+	if (!CLUNET_SENDING)        // Если мы отпустили линию...
 	{
-		CLUNET_TIMER_REG_OCR = now + CLUNET_T; // РўРѕ РІРµСЂРЅС‘РјСЃСЏ РІ СЌС‚Рѕ РїСЂРµСЂС‹РІР°РЅРёРµ С‡РµСЂРµР· CLUNET_T РµРґРёРЅРёС† РІСЂРµРјРµРЅРё
+		CLUNET_TIMER_REG_OCR = now + CLUNET_T; // То вернёмся в это прерывание через CLUNET_T единиц времени
 		return;
 	}
 	switch (clunetSendingState)
 	{
-		case CLUNET_SENDING_STATE_INIT: // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ
+		case CLUNET_SENDING_STATE_INIT: // Инициализация
 			CLUNET_TIMER_REG_OCR = now + CLUNET_INIT_T;	
-			clunetSendingState = CLUNET_SENDING_STATE_PRIO1;  // РќР°С‡РёРЅР°РµРј СЃР»РµРґСѓСЋС‰СѓСЋ С„Р°Р·Сѓ
+			clunetSendingState = CLUNET_SENDING_STATE_PRIO1;  // Начинаем следующую фазу
 			return;
-		case CLUNET_SENDING_STATE_PRIO1: // Р¤Р°Р·Р° РїРµСЂРµРґР°С‡Рё РїСЂРёРѕСЂРёС‚РµС‚Р°, СЃС‚Р°СЂС€РёР№ Р±РёС‚
-			if ((clunetCurrentPrio-1) & 2) // Р•СЃР»Рё 1, С‚Рѕ Р¶РґС‘Рј 3T, Р° РµСЃР»Рё 0, С‚Рѕ 1T
+		case CLUNET_SENDING_STATE_PRIO1: // Фаза передачи приоритета, старший бит
+			if ((clunetCurrentPrio-1) & 2) // Если 1, то ждём 3T, а если 0, то 1T
 				CLUNET_TIMER_REG_OCR = now + CLUNET_1_T;
 			else CLUNET_TIMER_REG_OCR = now + CLUNET_0_T;	
 			clunetSendingState = CLUNET_SENDING_STATE_PRIO2;
 			return;
-		case CLUNET_SENDING_STATE_PRIO2: // Р¤Р°Р·Р° РїРµСЂРµРґР°С‡Рё РїСЂРёРѕСЂРёС‚РµС‚Р°, РјР»Р°РґС€РёР№ Р±РёС‚
-			if ((clunetCurrentPrio-1) & 1) // Р•СЃР»Рё 1, С‚Рѕ Р¶РґС‘Рј 3T, Р° РµСЃР»Рё 0, С‚Рѕ 1T
+		case CLUNET_SENDING_STATE_PRIO2: // Фаза передачи приоритета, младший бит
+			if ((clunetCurrentPrio-1) & 1) // Если 1, то ждём 3T, а если 0, то 1T
 				CLUNET_TIMER_REG_OCR = now + CLUNET_1_T;
 			else CLUNET_TIMER_REG_OCR = now + CLUNET_0_T;	
 			clunetSendingState = CLUNET_SENDING_STATE_DATA;
 			return;
-		case CLUNET_SENDING_STATE_DATA: // Р¤Р°Р·Р° РїРµСЂРµРґР°С‡Рё РґР°РЅРЅС‹С…
-			if (dataToSend[clunetSendingCurrentByte] & (1 << clunetSendingCurrentBit)) // Р•СЃР»Рё 1, С‚Рѕ Р¶РґС‘Рј 3T, Р° РµСЃР»Рё 0, С‚Рѕ 1T
+		case CLUNET_SENDING_STATE_DATA: // Фаза передачи данных
+			if (dataToSend[clunetSendingCurrentByte] & (1 << clunetSendingCurrentBit)) // Если 1, то ждём 3T, а если 0, то 1T
 				CLUNET_TIMER_REG_OCR = now + CLUNET_1_T;
 			else CLUNET_TIMER_REG_OCR = now + CLUNET_0_T;
-			clunetSendingCurrentBit++; // РџРµСЂРµС…РѕРґРёРј Рє СЃР»РµРґСѓСЋС‰РµРјСѓ Р±РёС‚Сѓ
+			clunetSendingCurrentBit++; // Переходим к следующему биту
 			if (clunetSendingCurrentBit >= 8)
 			{
 				clunetSendingCurrentBit = 0;
 				clunetSendingCurrentByte++;
 			}
-			if (clunetSendingCurrentByte >= clunetSendingDataLength) // Р”Р°РЅРЅС‹Рµ Р·Р°РєРѕРЅС‡РёР»РёСЃСЊ
+			if (clunetSendingCurrentByte >= clunetSendingDataLength) // Данные закончились
 			{
-				clunetSendingState = CLUNET_SENDING_STATE_STOP; // РЎР»РµРґСѓСЋС‰Р°СЏ С„Р°Р·Р°
+				clunetSendingState = CLUNET_SENDING_STATE_STOP; // Следующая фаза
 			}
 			return;
 	}
@@ -131,18 +131,18 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 void clunet_start_send()
 {
 	CLUNET_SEND_0;
-	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT) // Р•СЃР»Рё РЅРµ РЅСѓР¶РЅР° РїР°СѓР·Р°...
-		clunetSendingState = CLUNET_SENDING_STATE_INIT; // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РїРµСЂРµРґР°С‡Рё
-	clunetSendingCurrentByte = clunetSendingCurrentBit = 0; // РћР±РЅСѓР»СЏРµРј СЃС‡С‘С‚С‡РёРє
-	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG+CLUNET_T;			// РџР»Р°РЅРёСЂСѓРµРј С‚Р°Р№РјРµСЂ, РѕР±С‹С‡РЅРѕ РїРѕС‡РµРјСѓ-С‚Рѕ РїСЂРµСЂС‹РІР°РЅРёРµ СЃСЂР°Р±Р°С‚С‹РІР°РµС‚ СЃСЂР°Р·Сѓ
-	CLUNET_ENABLE_TIMER_COMP;			// Р’РєР»СЋС‡Р°РµРј РїСЂРµСЂС‹РІР°РЅРёРµ С‚Р°Р№РјРµСЂР°-СЃСЂР°РІРЅРµРЅРёСЏ
+	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT) // Если не нужна пауза...
+		clunetSendingState = CLUNET_SENDING_STATE_INIT; // Инициализация передачи
+	clunetSendingCurrentByte = clunetSendingCurrentBit = 0; // Обнуляем счётчик
+	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG+CLUNET_T;			// Планируем таймер, обычно почему-то прерывание срабатывает сразу
+	CLUNET_ENABLE_TIMER_COMP;			// Включаем прерывание таймера-сравнения
 }
 
 void clunet_send(unsigned char address, unsigned char prio, unsigned char command, char* data, unsigned char size)
 {
-	if (CLUNET_OFFSET_DATA+size+1 > CLUNET_SEND_BUFFER_SIZE) return; // РќРµ С…РІР°С‚Р°РµС‚ Р±СѓС„РµСЂР°
-	CLUNET_DISABLE_TIMER_COMP;CLUNET_SEND_0; // РџСЂРµСЂС‹РІР°РµРј С‚РµРєСѓС‰СѓСЋ РїРµСЂРµРґР°С‡Сѓ, РµСЃР»Рё РµСЃС‚СЊ С‚Р°РєР°СЏ
-	// Р—Р°РїРѕР»РЅСЏРµРј РїРµСЂРµРјРµРЅРЅС‹Рµ
+	if (CLUNET_OFFSET_DATA+size+1 > CLUNET_SEND_BUFFER_SIZE) return; // Не хватает буфера
+	CLUNET_DISABLE_TIMER_COMP;CLUNET_SEND_0; // Прерываем текущую передачу, если есть такая
+	// Заполняем переменные
 	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)
 		clunetSendingState = CLUNET_SENDING_STATE_IDLE;
 	clunetCurrentPrio = prio;
@@ -156,11 +156,11 @@ void clunet_send(unsigned char address, unsigned char prio, unsigned char comman
 	dataToSend[CLUNET_OFFSET_DATA+size] = check_crc((char*)dataToSend, CLUNET_OFFSET_DATA+size);
 	clunetSendingDataLength = CLUNET_OFFSET_DATA + size + 1;
 	if (
-		(clunetReadingState == CLUNET_READING_STATE_IDLE) // Р•СЃР»Рё РјС‹ РЅРёС‡РµРіРѕ РЅРµ РїРѕР»СѓС‡Р°РµРј РІ РґР°РЅРЅС‹Р№ РјРѕРјРµРЅС‚, С‚Рѕ РїРѕСЃС‹Р»Р°РµРј СЃСЂР°Р·Сѓ		
-//		|| ((clunetReadingState == CLUNET_READING_STATE_DATA) && (prio > clunetReceivingPrio)) // Р›РёР±Рѕ РµСЃР»Рё РїРѕР»СѓС‡Р°РµРј, РЅРѕ СЃ Р±РѕР»РµРµ РЅРёР·РєРёРј РїСЂРёРѕСЂРёС‚РµС‚РѕРј
+		(clunetReadingState == CLUNET_READING_STATE_IDLE) // Если мы ничего не получаем в данный момент, то посылаем сразу		
+//		|| ((clunetReadingState == CLUNET_READING_STATE_DATA) && (prio > clunetReceivingPrio)) // Либо если получаем, но с более низким приоритетом
 		)
-		clunet_start_send(); // Р—Р°РїСѓСЃРєР°РµРј РїРµСЂРµРґР°С‡Сѓ СЃСЂР°Р·Сѓ
-	else clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE; // РРЅР°С‡Рµ Р¶РґС‘Рј Р»РёРЅРёСЋ
+		clunet_start_send(); // Запускаем передачу сразу
+	else clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE; // Иначе ждём линию
 }
 
 inline void clunet_data_received(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size)
@@ -168,12 +168,12 @@ inline void clunet_data_received(unsigned char src_address, unsigned char dst_ad
 	if (on_data_received_sniff)
 		(*on_data_received_sniff)(src_address, dst_address, command, data, size);
 
-	if (src_address == CLUNET_DEVICE_ID) return; // РРіРЅРѕСЂРёСЂСѓРµРј СЃРѕРѕР±С‰РµРЅРёСЏ РѕС‚ СЃР°РјРѕРіРѕ СЃРµР±СЏ!
+	if (src_address == CLUNET_DEVICE_ID) return; // Игнорируем сообщения от самого себя!
 
 	if ((dst_address != CLUNET_DEVICE_ID) &&
-		(dst_address != CLUNET_BROADCAST_ADDRESS)) return; // РРіРЅРѕСЂРёСЂСѓРµРј СЃРѕРѕР±С‰РµРЅРёСЏ РЅРµ РґР»СЏ РЅР°СЃ					
+		(dst_address != CLUNET_BROADCAST_ADDRESS)) return; // Игнорируем сообщения не для нас					
 
-	if (command == CLUNET_COMMAND_REBOOT) // РџСЂРѕСЃС‚Рѕ СЂРµР±СѓС‚. Р РґР°, СЂРµР±СѓС‚РЅСѓС‚СЊ СЃРµР±СЏ РјС‹ РјРѕР¶РµРј
+	if (command == CLUNET_COMMAND_REBOOT) // Просто ребут. И да, ребутнуть себя мы можем
 	{
 		cli();
 		set_bit(WDTCR, WDE);
@@ -182,14 +182,14 @@ inline void clunet_data_received(unsigned char src_address, unsigned char dst_ad
 
 	if ((clunetSendingState == CLUNET_SENDING_STATE_IDLE) || (clunetCurrentPrio <= CLUNET_PRIORITY_MESSAGE))
 	{
-		if (command == CLUNET_COMMAND_DISCOVERY) // РћС‚РІРµС‚ РЅР° РїРѕРёСЃРє СѓСЃС‚СЂРѕР№СЃС‚РІ
+		if (command == CLUNET_COMMAND_DISCOVERY) // Ответ на поиск устройств
 		{
 			char buf[] = CLUNET_DEVICE_NAME;
 			int len = 0; while(buf[len]) len++;
 			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
 			clunet_send(src_address, CLUNET_PRIORITY_MESSAGE, CLUNET_COMMAND_DISCOVERY_RESPONSE, buf, len);
 		}
-		else if (command == CLUNET_COMMAND_PING) // РћС‚РІРµС‚ РЅР° РїРёРЅРі
+		else if (command == CLUNET_COMMAND_PING) // Ответ на пинг
 		{
 			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
 			clunet_send(src_address, CLUNET_PRIORITY_COMMAND, CLUNET_COMMAND_PING_REPLY, data, size);
@@ -199,7 +199,7 @@ inline void clunet_data_received(unsigned char src_address, unsigned char dst_ad
 	if (on_data_received)
 		(*on_data_received)(src_address, dst_address, command, data, size);
 		
-	if ((clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE) && !CLUNET_READING) // Р•СЃР»Рё РµСЃС‚СЊ РЅРµРѕС‚РѕСЃР»Р°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ, С€Р»С‘Рј, Р»РёРЅРёСЏ РѕСЃРІРѕР±РѕРґРёР»Р°СЃСЊ
+	if ((clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE) && !CLUNET_READING) // Если есть неотосланные данные, шлём, линия освободилась
 	{
 		clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
 		clunet_start_send();		
@@ -210,13 +210,13 @@ ISR(CLUNET_TIMER_OVF_VECTOR)
 {		
 	if (clunetTimerPeriods < 3)
 		clunetTimerPeriods++;
-	else // РЎР»РёС€РєРѕРј РґРѕР»РіРѕ РЅРµС‚ СЃРёРіРЅР°Р»Р°, СЃР±СЂРѕСЃ Рё РѕС‚РєР»СЋС‡РµРЅРёРµ РїСЂРµСЂС‹РІР°РЅРёСЏ
+	else // Слишком долго нет сигнала, сброс и отключение прерывания
 	{
-		CLUNET_SEND_0; 					// Рђ РІРґСЂСѓРі РјС‹ Р·Р°Р±С‹Р»Рё Р»РёРЅРёСЋ РѕС‚Р¶Р°С‚СЊ? РҐРѕС‚СЏ РїРѕ РёРґРµРµ РЅРµ РґРѕР»Р¶РЅРѕ...
+		CLUNET_SEND_0; 					// А вдруг мы забыли линию отжать? Хотя по идее не должно...
 		clunetReadingState = CLUNET_READING_STATE_IDLE;
 		if ((clunetSendingState == CLUNET_SENDING_STATE_IDLE) && (!CLUNET_READING))
 			CLUNET_DISABLE_TIMER_OVF;
-		if ((clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE) && (!CLUNET_READING)) // Р•СЃР»Рё РµСЃС‚СЊ РЅРµРѕС‚РѕСЃР»Р°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ, С€Р»С‘Рј, Р»РёРЅРёСЏ РѕСЃРІРѕР±РѕРґРёР»Р°СЃСЊ
+		if ((clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE) && (!CLUNET_READING)) // Если есть неотосланные данные, шлём, линия освободилась
 			clunet_start_send();
 	}
 }
@@ -225,22 +225,22 @@ ISR(CLUNET_TIMER_OVF_VECTOR)
 ISR(CLUNET_INT_VECTOR)
 {
 	unsigned char time = (unsigned char)((CLUNET_TIMER_REG-clunetTimerStart) & 0xFF);
-	if (!CLUNET_READING) // Р›РёРЅРёСЋ РѕС‚РїСѓСЃС‚РёР»Рѕ
+	if (!CLUNET_READING) // Линию отпустило
 	{
 		CLUNET_ENABLE_TIMER_OVF;
-		if (time >= (CLUNET_INIT_T+CLUNET_1_T)/2) // Р•СЃР»Рё РєС‚Рѕ-С‚Рѕ РґРѕР»РіРѕ Р¶РјС‘С‚ Р»РёРЅРёСЋ, СЌС‚Рѕ РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ
+		if (time >= (CLUNET_INIT_T+CLUNET_1_T)/2) // Если кто-то долго жмёт линию, это инициализация
 		{
 			clunetReadingState = CLUNET_READING_STATE_PRIO1;
 		}
-		else switch (clunetReadingState) // Рђ РµСЃР»Рё РЅРµ РґРѕР»РіРѕ, С‚Рѕ СЃРјРѕС‚СЂРёРј РЅР° СЌС‚Р°Рї
+		else switch (clunetReadingState) // А если не долго, то смотрим на этап
 		{
-			case CLUNET_READING_STATE_PRIO1:    // РџРѕР»СѓС‡РµРЅРёРµ РїСЂРёРѕСЂРёС‚РµС‚Р°, РєР»РёРµРЅС‚Сѓ РѕРЅ РЅРµ РЅСѓР¶РµРЅ
+			case CLUNET_READING_STATE_PRIO1:    // Получение приоритета, клиенту он не нужен
 				if (time > (CLUNET_0_T+CLUNET_1_T)/2)
 					clunetReceivingPrio = 3;
 					else clunetReceivingPrio = 1;
 				clunetReadingState = CLUNET_READING_STATE_PRIO2;
 				break;
-			case CLUNET_READING_STATE_PRIO2:	 // РџРѕР»СѓС‡РµРЅРёРµ РїСЂРёРѕСЂРёС‚РµС‚Р°, РєР»РёРµРЅС‚Сѓ РѕРЅ РЅРµ РЅСѓР¶РµРЅ
+			case CLUNET_READING_STATE_PRIO2:	 // Получение приоритета, клиенту он не нужен
 				if (time > (CLUNET_0_T+CLUNET_1_T)/2)
 					clunetReceivingPrio++;
 				clunetReadingState = CLUNET_READING_STATE_DATA;
@@ -248,17 +248,17 @@ ISR(CLUNET_INT_VECTOR)
 				clunetReadingCurrentBit = 0;
 				dataToRead[0] = 0;
 				break;
-			case CLUNET_READING_STATE_DATA:    // Р§С‚РµРЅРёРµ РІСЃРµС… РґР°РЅРЅС‹С…
+			case CLUNET_READING_STATE_DATA:    // Чтение всех данных
 				if (time > (CLUNET_0_T+CLUNET_1_T)/2)
 					dataToRead[clunetReadingCurrentByte] |= (1 << clunetReadingCurrentBit);
 				clunetReadingCurrentBit++;
-				if (clunetReadingCurrentBit >= 8)  // РџРµСЂРµС…РѕРґРёРј Рє СЃР»РµРґСѓСЋС‰РµРјСѓ Р±Р°Р№С‚Сѓ
+				if (clunetReadingCurrentBit >= 8)  // Переходим к следующему байту
 				{
 					clunetReadingCurrentByte++;
 					clunetReadingCurrentBit = 0;
 					if (clunetReadingCurrentByte < CLUNET_READ_BUFFER_SIZE)
 						dataToRead[clunetReadingCurrentByte] = 0;
-					else // Р•СЃР»Рё Р±СѓС„РµСЂ Р·Р°РєРѕРЅС‡РёР»СЃСЏ
+					else // Если буфер закончился
 					{
 						clunetReadingState = CLUNET_READING_STATE_IDLE;
 						return;
@@ -266,9 +266,9 @@ ISR(CLUNET_INT_VECTOR)
 				}				
 				if ((clunetReadingCurrentByte > CLUNET_OFFSET_SIZE) && (clunetReadingCurrentByte > dataToRead[CLUNET_OFFSET_SIZE]+CLUNET_OFFSET_DATA))
 				{
-					// РџРѕР»СѓС‡РёР»Рё РґР°РЅРЅС‹Рµ РїРѕР»РЅРѕСЃС‚СЊСЋ, СѓСЂР°!
+					// Получили данные полностью, ура!
 					clunetReadingState = CLUNET_READING_STATE_IDLE;
-					char crc = check_crc((char*)dataToRead,clunetReadingCurrentByte); // РџСЂРѕРІРµСЂСЏРµРј CRC
+					char crc = check_crc((char*)dataToRead,clunetReadingCurrentByte); // Проверяем CRC
 					if (crc == 0)
 						clunet_data_received(dataToRead[CLUNET_OFFSET_SRC_ADDRESS], dataToRead[CLUNET_OFFSET_DST_ADDRESS], dataToRead[CLUNET_OFFSET_COMMAND], (char*)(dataToRead+CLUNET_OFFSET_DATA), dataToRead[CLUNET_OFFSET_SIZE]);
 				}
@@ -296,7 +296,7 @@ void clunet_init()
 	MCUCSR = 0;
 }
 
-int clunet_ready_to_send() // Р’РѕР·РІСЂР°С‰Р°РµС‚ 0, РµСЃР»Рё РіРѕС‚РѕРІ Рє РїРµСЂРµРґР°С‡Рµ, РёРЅР°С‡Рµ РїСЂРёРѕСЂРёС‚РµС‚ С‚РµРєСѓС‰РµР№ Р·Р°РґР°С‡Рё
+int clunet_ready_to_send() // Возвращает 0, если готов к передаче, иначе приоритет текущей задачи
 {
 	if (clunetSendingState == CLUNET_SENDING_STATE_IDLE) return 0;
 	return clunetCurrentPrio;
