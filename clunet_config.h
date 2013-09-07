@@ -27,7 +27,7 @@
 
 // Порт и нога для чтения данных, должна иметь внешнеее прерывание
 #define CLUNET_READ_PORT D
-#define CLUNET_READ_PIN 2
+#define CLUNET_READ_PIN 4
 
 // Предделитель таймера
 #define CLUNET_TIMER_PRESCALER 64
