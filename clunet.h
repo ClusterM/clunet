@@ -153,7 +153,9 @@
 #define CLUNET_PRIORITY_COMMAND 4
 /* Приоритет пакета 4 - команда, на которую нужно сразу отреагировать */
 
+#ifndef CLUNET_T
 #define CLUNET_T ((F_CPU / CLUNET_TIMER_PRESCALER) / 15625)
+#endif
 #if CLUNET_T < 8
 #  error Timer frequency is too small, increase CPU frequency or decrease timer prescaler
 #endif
