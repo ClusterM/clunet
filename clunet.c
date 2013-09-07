@@ -26,7 +26,7 @@ volatile unsigned char clunetReadingCurrentBit;
 volatile unsigned char clunetCurrentPrio;
 
 volatile unsigned char clunetReceivingState = 0;
-volatile unsigned char clunetReceivingPrio = 0;
+//volatile unsigned char clunetReceivingPrio = 0;
 volatile unsigned char clunetTimerStart = 0;
 volatile unsigned char clunetTimerPeriods = 0;
 
@@ -235,14 +235,18 @@ ISR(CLUNET_INT_VECTOR)
 		else switch (clunetReadingState) // А если не долго, то смотрим на этап
 		{
 			case CLUNET_READING_STATE_PRIO1:    // Получение приоритета, клиенту он не нужен
+			/*
 				if (time > (CLUNET_0_T+CLUNET_1_T)/2)
 					clunetReceivingPrio = 3;
 					else clunetReceivingPrio = 1;
+			*/
 				clunetReadingState = CLUNET_READING_STATE_PRIO2;
 				break;
 			case CLUNET_READING_STATE_PRIO2:	 // Получение приоритета, клиенту он не нужен
+			/*
 				if (time > (CLUNET_0_T+CLUNET_1_T)/2)
 					clunetReceivingPrio++;
+			*/
 				clunetReadingState = CLUNET_READING_STATE_DATA;
 				clunetReadingCurrentByte = 0;
 				clunetReadingCurrentBit = 0;
