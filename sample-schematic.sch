@@ -1,0 +1,190 @@
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:special
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:intercom_original-cache
+EELAYER 27 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title "noname.sch"
+Date "7 sep 2013"
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L ATMEGA8-AI UC1
+U 1 1 522AB726
+P 2100 2250
+F 0 "UC1" H 1350 3450 40  0000 L BNN
+F 1 "ATMEGA8-AI" H 2600 700 40  0000 L BNN
+F 2 "TQFP32" H 2100 2250 30  0000 C CIN
+F 3 "" H 2100 2250 60  0000 C CNN
+	1    2100 2250
+	1    0    0    -1  
+$EndComp
+$Comp
+L BC547 Q1
+U 1 1 522AB799
+P 4100 3250
+F 0 "Q1" H 4100 3101 40  0000 R CNN
+F 1 "BC847" H 4100 3400 40  0000 R CNN
+F 2 "~" H 4000 3352 29  0000 C CNN
+F 3 "~" H 4100 3250 60  0000 C CNN
+	1    4100 3250
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 522AB7F1
+P 4200 3550
+F 0 "#PWR?" H 4200 3550 30  0001 C CNN
+F 1 "GND" H 4200 3480 30  0001 C CNN
+F 2 "" H 4200 3550 60  0000 C CNN
+F 3 "" H 4200 3550 60  0000 C CNN
+	1    4200 3550
+	1    0    0    -1  
+$EndComp
+$Comp
+L R 5K
+U 1 1 522AB816
+P 3650 3250
+F 0 "5K" V 3730 3250 40  0000 C CNN
+F 1 "R1" V 3657 3251 40  0000 C CNN
+F 2 "~" V 3580 3250 30  0000 C CNN
+F 3 "~" H 3650 3250 30  0000 C CNN
+	1    3650 3250
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	3100 3050 4500 3050
+Wire Wire Line
+	4200 3450 4200 3550
+Wire Wire Line
+	3100 3250 3400 3250
+$Comp
+L CONN_1 BUS
+U 1 1 522AB8C8
+P 4650 3050
+F 0 "BUS" H 4730 3050 40  0000 L CNN
+F 1 "CONN_1" H 4650 3105 30  0001 C CNN
+F 2 "" H 4650 3050 60  0000 C CNN
+F 3 "" H 4650 3050 60  0000 C CNN
+	1    4650 3050
+	1    0    0    -1  
+$EndComp
+Connection ~ 4200 3050
+$Comp
+L ATMEGA8-AI UC2
+U 1 1 522AB9C5
+P 6050 2250
+F 0 "UC2" H 5300 3450 40  0000 L BNN
+F 1 "ATMEGA8-AI" H 6550 700 40  0000 L BNN
+F 2 "TQFP32" H 6050 2250 30  0000 C CIN
+F 3 "" H 6050 2250 60  0000 C CNN
+	1    6050 2250
+	1    0    0    -1  
+$EndComp
+$Comp
+L CONN_1 BUS
+U 1 1 522AB9DC
+P 7650 3050
+F 0 "BUS" H 7730 3050 40  0000 L CNN
+F 1 "CONN_1" H 7650 3105 30  0001 C CNN
+F 2 "" H 7650 3050 60  0000 C CNN
+F 3 "" H 7650 3050 60  0000 C CNN
+	1    7650 3050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7050 3050 7500 3050
+Wire Wire Line
+	7500 3050 7500 3250
+Wire Wire Line
+	7500 3250 7050 3250
+Connection ~ 7500 3050
+$Comp
+L CONN_1 BUS-GND
+U 1 1 522ABA39
+P 4650 3450
+F 0 "BUS-GND" H 4730 3450 40  0000 L CNN
+F 1 "CONN_1" H 4650 3505 30  0001 C CNN
+F 2 "" H 4650 3450 60  0000 C CNN
+F 3 "" H 4650 3450 60  0000 C CNN
+	1    4650 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 522ABA49
+P 4500 3550
+F 0 "#PWR?" H 4500 3550 30  0001 C CNN
+F 1 "GND" H 4500 3480 30  0001 C CNN
+F 2 "" H 4500 3550 60  0000 C CNN
+F 3 "" H 4500 3550 60  0000 C CNN
+	1    4500 3550
+	1    0    0    -1  
+$EndComp
+$Comp
+L CONN_1 BUS-GND
+U 1 1 522ABA58
+P 7650 3450
+F 0 "BUS-GND" H 7730 3450 40  0000 L CNN
+F 1 "CONN_1" H 7650 3505 30  0001 C CNN
+F 2 "" H 7650 3450 60  0000 C CNN
+F 3 "" H 7650 3450 60  0000 C CNN
+	1    7650 3450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4500 3450 4500 3550
+$Comp
+L GND #PWR?
+U 1 1 522ABA7B
+P 7500 3550
+F 0 "#PWR?" H 7500 3550 30  0001 C CNN
+F 1 "GND" H 7500 3480 30  0001 C CNN
+F 2 "" H 7500 3550 60  0000 C CNN
+F 3 "" H 7500 3550 60  0000 C CNN
+	1    7500 3550
+	1    0    0    -1  
+$EndComp
+Text Label 1750 4050 0    60   ~ 0
+Transistor method (CLUNET_WRITE_TRANSISTOR is defined)
+Text Label 5100 4050 0    60   ~ 0
+Simple method (CLUNET_WRITE_TRANSISTOR is not defined)
+Wire Wire Line
+	7500 3450 7500 3550
+$EndSCHEMATC
