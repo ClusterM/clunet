@@ -34,7 +34,7 @@
 
 /* Custom T (T >= 8 && T <= 24). 
  T is frame unit size in timer ticks. Lower - faster, highter - more stable
- If not defined T will be calculated as ~64us based in CLUNET_TIMER_PRESCALER value
+ If not defined T will be calculated as ~64us based on CLUNET_TIMER_PRESCALER value
 */
  //#define CLUNET_T 8
 
