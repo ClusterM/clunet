@@ -10,6 +10,7 @@ Features:
 * There is no master device, all devices are equal;
 * You can use a very long cable, more than 100 meters;
 * You don't need to care about collisions;
+* Automatic CRC calculation and CRC check;
 * Pseudo multitasking using interrupts;
 * Up to 255 devices on one bus.
 
@@ -81,10 +82,10 @@ Function to send data:
 
 * **address** - address of destination device or `CLUNET_BROADCAST_ADDRESS` for multicast
 * **prio** - packet priority:
-  1. `CLUNET\_PRIORITY\_NOTICE`,
-  2. `CLUNET\_PRIORITY\_INFO`,
-  3. `CLUNET\_PRIORITY\_MESSAGE`,
-  4. `CLUNET\_PRIORITY\_COMMAND`;
+  1. `CLUNET_PRIORITY_NOTICE`,
+  2. `CLUNET_PRIORITY_INFO`,
+  3. `CLUNET_PRIORITY_MESSAGE`,
+  4. `CLUNET_PRIORITY_COMMAND`;
 * **command** - command ID (0-255), note that some IDs are occupied by predefined commands (see *clunet.h*) and some are reserved (see below);
 * **data** - pointer to data if any;
 * **size** - data size.
