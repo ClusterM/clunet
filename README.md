@@ -40,16 +40,16 @@ Edit *clunet\_config.h* and change some values:
 * **CLUNET\_READ\_PORT** and **CLUNET\_READ\_PIN** - port and pin to read data, should be connected directly to the line;
 * **CLUNET\_WRITE\_TRANSISTOR** - define if you are using a transistor on output pin (see schematics);
 * **CLUNET\_TIMER\_PRESCALER** - prescaler for timer, define it to autocalculate `CLUNET_T` value as `64us`, it *must* match timer initialization code, `(F_CPU / CLUNET_TIMER_PRESCALER) / 15625` *must* be >= 8 and <= 24, thus 64 is the optimal value for 8MHz;
-* **CLUNET\_T** - T value, it's a time period between signals in timer ticks, length of logical 0 is T, and logical 1 is 3*T, lower T is faster while higher T is more stable, it's autocalculated as 64us based on **CLUNET\_TIMER\_PRESCALER** if not defined;
+* **CLUNET\_T** - T value, it's a time period between signals in timer ticks, length of logical 0 is T, and logical 1 is 3\*T, lower T is faster while higher T is more stable, it's autocalculated as 64us based on **CLUNET\_TIMER\_PRESCALER** if not defined;
 * **CLUNET\_TIMER\_INIT** - code to init timer (normal mode);
-* **CLUNET\_TIMER\_REG** - timer/counter `register`;
-* **CLUNET\_TIMER\_REG\_OCR** - timer/counter `output compare register`;
+* **CLUNET\_TIMER\_REG** - timer/counter register;
+* **CLUNET\_TIMER\_REG\_OCR** - timer/counter `output compare` register;
 * **CLUNET\_ENABLE\_TIMER\_COMP** and **CLUNET\_DISABLE\_TIMER\_COMP** - code to enable/disable timer `output compare match` interrupt;
-* **CLUNET\_ENABLE\_TIMER\_OVF** and **CLUNET\_DISABLE\_TIMER\_OVF** - code to enable/disable timer `overflow interrupt`;
+* **CLUNET\_ENABLE\_TIMER\_OVF** and **CLUNET\_DISABLE\_TIMER\_OVF** - code to enable/disable timer `overflow` interrupt;
 * **CLUNET\_INIT\_INT** - code to init external interrupt (read pin);
-* **CLUNET\_TIMER\_COMP\_VECTOR** - timer `output compare match interrupt vector`;
-* **CLUNET\_TIMER\_OVF\_VECTOR** - timer `overflow interrupt vector`;
-* **CLUNET\_INT\_VECTOR** - external `interrupt vector`.
+* **CLUNET\_TIMER\_COMP\_VECTOR** - timer `output compare match` interrupt vector;
+* **CLUNET\_TIMER\_OVF\_VECTOR** - timer `overflow` interrupt vector`;
+* **CLUNET\_INT\_VECTOR** - `external interrupt` vector.
 
 Default configuration file is optimised for ATMEGA8 / 8MHz.
 
