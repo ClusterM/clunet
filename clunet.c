@@ -184,10 +184,15 @@ inline void clunet_data_received(unsigned char src_address, unsigned char dst_ad
 	{
 		if (command == CLUNET_COMMAND_DISCOVERY) // Ответ на поиск устройств
 		{
+#ifdef CLUNET_DEVICE_NAME
 			char buf[] = CLUNET_DEVICE_NAME;
 			int len = 0; while(buf[len]) len++;
 			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
 			clunet_send(src_address, CLUNET_PRIORITY_MESSAGE, CLUNET_COMMAND_DISCOVERY_RESPONSE, buf, len);
+#else
+			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
+			clunet_send(src_address, CLUNET_PRIORITY_MESSAGE, CLUNET_COMMAND_DISCOVERY_RESPONSE, 0, 0);
+#endif		
 		}
 		else if (command == CLUNET_COMMAND_PING) // Ответ на пинг
 		{
