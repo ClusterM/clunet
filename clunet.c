@@ -1,7 +1,7 @@
 /* Name: clunet.c
  * Project: CLUNET network driver
  * Author: Alexey Avdyukhin
- * Creation Date: 2013-07-22
+ * Creation Date: 2013-09-09
  * License: DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
  */
 
@@ -301,6 +301,7 @@ void clunet_init()
 	CLUNET_INIT_INT;
 #ifdef CLUNET_ENABLE_INT
 	CLUNET_ENABLE_INT;
+#warning CLUNET_ENABLE_INT is deprecated
 #endif	
 	char reset_source = MCUCSR;
 	clunet_send(CLUNET_BROADCAST_ADDRESS, CLUNET_PRIORITY_MESSAGE,	CLUNET_COMMAND_BOOT_COMPLETED, &reset_source, 1);

@@ -1,7 +1,7 @@
 /* Name: clunet.h
  * Project: CLUNET network driver
  * Author: Alexey Avdyukhin
- * Creation Date: 2013-07-23
+ * Creation Date: 2013-09-09
  * License: DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
  */
  
