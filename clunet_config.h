@@ -8,7 +8,7 @@
  #ifndef __clunet_config_h_included__
 #define __clunet_config_h_included__
 
-/* Device address (0-255) */
+/* Device address (0-254) */
 #define CLUNET_DEVICE_ID 99
 
 /* Device name */
