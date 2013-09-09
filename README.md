@@ -102,7 +102,7 @@ There is some reserved commands:
 
 
 ##Tested on
-* ATMEGA
+* ATMEGA8
 * ATMEGA16
 * ATMEGA64
 
