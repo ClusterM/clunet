@@ -100,7 +100,7 @@ Sample code:
 	                                // or 0 if output buffer is not busy
 
 	char *hello = "Hello world!";
-	clunet_send(1, CLUNET_PRIORITY_INFO, 100, hello, sizeof(hello));
+	clunet_send(1, CLUNET_PRIORITY_INFO, 100, hello, strlen(hello));
 
 
 #### Reserved commands
