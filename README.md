@@ -1,6 +1,6 @@
 # CLUNET
 
-The CLUNET library - simple single-wire peer-to-peer network driver for AVR microcontrollers, perfect way to interconnect microcontrollers in your house.
+The CLUNET library - is a simple single-wire peer-to-peer network driver for AVR microcontrollers, perfect way to interconnect microcontrollers in your house.
 
 Features:
 
