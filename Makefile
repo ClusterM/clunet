@@ -1,10 +1,11 @@
 PRG            = clunet-demo
-OBJ            = clunet-demo.o clunet.o
+OBJ            = clunet-demo.o
 #LFUSE          = E4
 #LFUSE          = FF
 #HFUSE          = D9
 #MCU_PROGRAMMER = m8
 
+CLUNET_PATH		 = .
 CLUNET_FLASHER = D:/!Important!/Projects/C\#/clunet/clunetflasher/bin/Release/clunetflasher.exe
 CLUNET_IP      = 10.13.0.254
 CLUNET_PORT    = 10009
@@ -61,7 +62,7 @@ MCU_TARGET     = atmega8
 OPTIMIZE       = -O2
 
 DEFS           =
-LIBS           =
+LIBS           = $(CLUNET_PATH)/clunet.c
 
 # You should not have to change anything below here.
 
@@ -69,7 +70,7 @@ CC             = avr-gcc
 
 # Override is only needed by avr-lib build system.
 
-override CFLAGS        = -g -Wall $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS)
+override CFLAGS        = -g -Wall $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS) -I$(CLUNET_PATH)
 override LDFLAGS       = -Wl,-Map,$(PRG).map
 
 OBJCOPY        = avr-objcopy
