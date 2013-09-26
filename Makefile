@@ -3,7 +3,7 @@ OBJ            = clunet-demo.o
 #LFUSE          = E4
 #LFUSE          = FF
 #HFUSE          = D9
-#MCU_PROGRAMMER = m8
+MCU_PROGRAMMER = m8
 
 CLUNET_PATH		 = .
 CLUNET_FLASHER = D:/!Important!/Projects/C\#/clunet/clunetflasher/bin/Release/clunetflasher.exe
@@ -63,6 +63,10 @@ OPTIMIZE       = -O2
 
 DEFS           =
 LIBS           = $(CLUNET_PATH)/clunet.c
+
+program: hex
+#	$(CLUNET_FLASHER) $(CLUNET_IP) $(CLUNET_PORT) $(CLUNET_DEVICE_ID) $(PRG).hex
+	avrdude -V -p $(MCU_PROGRAMMER) -c avrisp2 -P usb -U flash:w:$(PRG).hex -U lfuse:w:0x$(LFUSE):m -U hfuse:w:0x$(HFUSE):m
 
 # You should not have to change anything below here.
 
@@ -150,8 +154,3 @@ pdf: $(PRG).pdf
 
 %.png: %.fig
 	$(FIG2DEV) -L png $< $@
-
-program: hex
-#	$(CLUNET_FLASHER) $(CLUNET_IP) $(CLUNET_PORT) $(CLUNET_DEVICE_ID) $(PRG).hex
-	avrdude -V -p $(MCU_PROGRAMMER) -c avrisp2 -P usb -U flash:w:$(PRG).hex -U lfuse:w:0x$(LFUSE):m -U hfuse:w:0x$(HFUSE):m
-
