@@ -152,6 +152,6 @@ pdf: $(PRG).pdf
 	$(FIG2DEV) -L png $< $@
 
 program: hex
-	$(CLUNET_FLASHER) $(CLUNET_IP) $(CLUNET_PORT) $(CLUNET_DEVICE_ID) $(PRG).hex
-#	avrdude -V -p $(MCU_PROGRAMMER) -c avrisp2 -P usb -U flash:w:$(PRG).hex -U lfuse:w:0x$(LFUSE):m -U hfuse:w:0x$(HFUSE):m
+#	$(CLUNET_FLASHER) $(CLUNET_IP) $(CLUNET_PORT) $(CLUNET_DEVICE_ID) $(PRG).hex
+	avrdude -V -p $(MCU_PROGRAMMER) -c avrisp2 -P usb -U flash:w:$(PRG).hex -U lfuse:w:0x$(LFUSE):m -U hfuse:w:0x$(HFUSE):m
 
