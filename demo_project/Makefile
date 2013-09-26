@@ -5,7 +5,7 @@ OBJ            = clunet-demo.o
 #HFUSE          = D9
 MCU_PROGRAMMER = m8
 
-CLUNET_PATH		 = .
+CLUNET_PATH		 = ..
 CLUNET_FLASHER = D:/Soft/Soft/clunetflasher/clunetflasher.exe
 CLUNET_IP      = 10.13.0.254
 CLUNET_PORT    = 10009
