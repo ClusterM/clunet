@@ -6,7 +6,7 @@ OBJ            = clunet-demo.o
 MCU_PROGRAMMER = m8
 
 CLUNET_PATH		 = .
-CLUNET_FLASHER = D:/!Important!/Projects/C\#/clunet/clunetflasher/bin/Release/clunetflasher.exe
+CLUNET_FLASHER = D:/Soft/Soft/clunetflasher/clunetflasher.exe
 CLUNET_IP      = 10.13.0.254
 CLUNET_PORT    = 10009
 CLUNET_DEVICE_ID = 99
@@ -74,7 +74,7 @@ CC             = avr-gcc
 
 # Override is only needed by avr-lib build system.
 
-override CFLAGS        = -g -Wall $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS) -I$(CLUNET_PATH)
+override CFLAGS        = -g -Wall $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS) -I. -I$(CLUNET_PATH)
 override LDFLAGS       = -Wl,-Map,$(PRG).map
 
 OBJCOPY        = avr-objcopy
