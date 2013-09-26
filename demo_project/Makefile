@@ -1,7 +1,7 @@
 PRG            = clunet-demo
 OBJ            = clunet-demo.o
 LFUSE          = E4
-HFUSE          = D8
+HFUSE          = D9
 MCU_PROGRAMMER = m8
 
 CLUNET_PATH		 = ..
