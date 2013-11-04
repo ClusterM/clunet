@@ -27,7 +27,7 @@
 
 /* Pin to receive data, external interrupt required! */
 #define CLUNET_READ_PORT D
-#define CLUNET_READ_PIN 4
+#define CLUNET_READ_PIN 2
 
 /* Timer prescaler */
 #define CLUNET_TIMER_PRESCALER 64
