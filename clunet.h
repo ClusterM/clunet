@@ -144,6 +144,9 @@
 #define CLUNET_COMMAND_DOOR_LOCK_INFO_REQUEST 0x1F
 /* Запрашивает текущее состояние дверного замка */
 
+#define CLUNET_COMMAND_BUTTON 0x20
+/* Нажата кнопка, в данных номер кнопки */
+
 #define CLUNET_COMMAND_PING 0xFE
 /* Пинг, на эту команду устройство должно ответить следующей командой, возвратив весь буфер */
 
