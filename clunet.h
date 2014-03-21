@@ -147,6 +147,15 @@
 #define CLUNET_COMMAND_BUTTON 0x20
 /* Нажата кнопка, в данных номер кнопки */
 
+#define CLUNET_COMMAND_WINDOW_COMMAND 0x21
+/* Открывает или закрывает окно. Один байт данных. 1 - открыть, 2 - закрыть */
+
+#define CLUNET_COMMAND_WINDOW_INFO 0x22
+/* Сообщает об открытии или закрытии окна. 1 - открыто, 2 - закрыто */
+
+#define CLUNET_COMMAND_WINDOW_INFO_REQUEST 0x23
+/* Запрашивает текущее состояние окна */
+
 #define CLUNET_COMMAND_PING 0xFE
 /* Пинг, на эту команду устройство должно ответить следующей командой, возвратив весь буфер */
 
