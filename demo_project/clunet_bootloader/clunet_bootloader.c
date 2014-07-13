@@ -11,7 +11,7 @@
 #define COMMAND_FIRMWARE_UPDATE_INIT 1
 #define COMMAND_FIRMWARE_UPDATE_READY 2
 #define COMMAND_FIRMWARE_UPDATE_WRITE 3
-#define COMMAND_FIRMWARE_UPDATE_WRITED 4
+#define COMMAND_FIRMWARE_UPDATE_WRITTEN 4
 #define COMMAND_FIRMWARE_UPDATE_DONE 5
 
 #define APP_END (FLASHEND - (BOOTSIZE * 2))
@@ -175,7 +175,7 @@ void firmware_update()
 						uint16_t address = *((uint32_t*)(buffer+CLUNET_OFFSET_DATA+1));
 						char* pagebuffer = buffer+CLUNET_OFFSET_DATA+5;
 						write_flash_page(address, pagebuffer);
-						send_firmware_command(COMMAND_FIRMWARE_UPDATE_WRITED);
+						send_firmware_command(COMMAND_FIRMWARE_UPDATE_WRITTEN);
 					}
 					break;
 				case COMMAND_FIRMWARE_UPDATE_DONE:					
