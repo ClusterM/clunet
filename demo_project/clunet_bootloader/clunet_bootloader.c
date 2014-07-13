@@ -121,7 +121,7 @@ int read()
 	{
 		return buffer[CLUNET_OFFSET_SIZE];
 	}
-	return -1; // Пришёл пакет, но левый
+	return -1; // РџСЂРёС€С‘Р» РїР°РєРµС‚, РЅРѕ Р»РµРІС‹Р№
 }
 
 void write_flash_page(uint32_t address, char* pagebuffer)
