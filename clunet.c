@@ -25,7 +25,6 @@ volatile unsigned char clunetReadingCurrentBit;
 volatile unsigned char clunetCurrentPrio;
 
 volatile unsigned char clunetReceivingState = 0;
-//volatile unsigned char clunetReceivingPrio = 0;
 volatile unsigned char clunetTimerStart = 0;
 volatile unsigned char clunetTimerPeriods = 0;
 
@@ -41,7 +40,7 @@ check_crc(char* data, unsigned char size)
             uint8_t inbyte = data[i];
             for (uint8_t j = 0 ; j < 8 ; j++)
             {
-                  uint8_t mix = (crc ^ inbyte) & 0x01;
+                  uint8_t mix = (crc ^ inbyte) & 1;
                   crc >>= 1;
                   if (mix) crc ^= 0x8C;
                   inbyte >>= 1;
@@ -50,13 +49,14 @@ check_crc(char* data, unsigned char size)
       return crc;
 }
 
+/* Процедура прерывания сравнения таймера */
 ISR(CLUNET_TIMER_COMP_VECTOR)
-{		
+{
 	uint8_t now = CLUNET_TIMER_REG;     // Запоминаем текущее время
 
 	switch (clunetSendingState)
 	{
-	case CLUNET_SENDING_STATE_PREINIT			// Нужно подождать перед отправкой
+	case CLUNET_SENDING_STATE_PREINIT:			// Нужно подождать перед отправкой
 		CLUNET_TIMER_REG_OCR = now + CLUNET_T;
 		clunetSendingState = CLUNET_SENDING_STATE_INIT;	// Начинаем следующую фазу
 		return;
@@ -128,7 +128,7 @@ clunet_start_send()
 	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)	// Если не нужна пауза...
 		clunetSendingState = CLUNET_SENDING_STATE_INIT;	// Инициализация передачи
 	clunetSendingCurrentByte = clunetSendingCurrentBit = 0;	// Обнуляем счётчик
-	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG+CLUNET_T;	// Планируем таймер, обычно почему-то прерывание срабатывает сразу
+	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + CLUNET_T;	// Планируем таймер, обычно почему-то прерывание срабатывает сразу
 	CLUNET_ENABLE_TIMER_COMP;				// Включаем прерывание таймера-сравнения
 }
 
@@ -206,6 +206,7 @@ clunet_data_received(unsigned char src_address, unsigned char dst_address, unsig
 	}
 }
 
+/* Процедура прерывания переполнения таймера */
 ISR(CLUNET_TIMER_OVF_VECTOR)
 {
 	if (clunetTimerPeriods < 3)
@@ -222,79 +223,72 @@ ISR(CLUNET_TIMER_OVF_VECTOR)
 	}
 }
 
+/* Процедура внешнего прерывания по фронту и спаду сигнала */
 ISR(CLUNET_INT_VECTOR)
 {
-	unsigned char time = (unsigned char)((CLUNET_TIMER_REG - clunetTimerStart) & 0xFF);
-	/* Линию отпустило */
-	if (!CLUNET_READING)
+	uint8_t now = CLUNET_TIMER_REG;		// Текущие значение таймера
+	CLUNET_ENABLE_TIMER_OVF;		// Активируем прерывания переполнения таймера при любой активности линии
+	/* Линию прижало к нулю */
+	if (CLUNET_READING)
 	{
-		CLUNET_ENABLE_TIMER_OVF;
+		clunetTimerStart = now;		// Запомним время начала сигнала
+		clunetTimerPeriods = 0;		// Сбросим счетчик периодов таймера
+	}
+	/* Линию отпустило */
+	else
+	{
+		uint8_t ticks = now - clunetTimerStart;	// Вычислим длину сигнала в тиках таймера
 		/* Если кто-то долго жмёт линию, это инициализация */
-		if (time >= (CLUNET_INIT_T + CLUNET_1_T) / 2)
-		{
+		if (ticks >= (CLUNET_INIT_T + CLUNET_1_T) / 2)
 			clunetReadingState = CLUNET_READING_STATE_PRIO1;
-		}
-		else
-		switch (clunetReadingState) // А если не долго, то смотрим на этап
+		else	 // А если не долго, то смотрим на этап
+		switch (clunetReadingState)
 		{
 		/* Получение приоритета (старший бит), клиенту он не нужен */
 		case CLUNET_READING_STATE_PRIO1:
-		/*
-			if (time > (CLUNET_0_T+CLUNET_1_T)/2)
-				clunetReceivingPrio = 3;
-				else clunetReceivingPrio = 1;
-		*/
 			clunetReadingState = CLUNET_READING_STATE_PRIO2;
 			break;
 		/* Получение приоритета (младший бит), клиенту он не нужен */
 		case CLUNET_READING_STATE_PRIO2:
-		/*
-			if (time > (CLUNET_0_T+CLUNET_1_T)/2)
-				clunetReceivingPrio++;
-		*/
 			clunetReadingState = CLUNET_READING_STATE_DATA;
-			clunetReadingCurrentByte = 0;
-			clunetReadingCurrentBit = 0;
+			clunetReadingCurrentByte = clunetReadingCurrentBit = 0;
 			dataToRead[0] = 0;
 			break;
 		/* Чтение данных */
 		case CLUNET_READING_STATE_DATA:
-			if (time > (CLUNET_0_T + CLUNET_1_T) / 2)
+			/* Если значащий бит */
+			if (ticks > (CLUNET_0_T + CLUNET_1_T) / 2)
 				dataToRead[clunetReadingCurrentByte] |= (1 << clunetReadingCurrentBit);
 			if (++clunetReadingCurrentBit & 8)  // Переходим к следующему байту
 			{
-				clunetReadingCurrentBit = 0;
 				if (++clunetReadingCurrentByte < CLUNET_READ_BUFFER_SIZE)
-					dataToRead[clunetReadingCurrentByte] = 0;
-				else // Если буфер закончился
 				{
-					clunetReadingState = CLUNET_READING_STATE_IDLE;
-					return;
+					/* Получили данные полностью, ура! */
+					if ((clunetReadingCurrentByte > CLUNET_OFFSET_SIZE) && (clunetReadingCurrentByte > dataToRead[CLUNET_OFFSET_SIZE] + CLUNET_OFFSET_DATA))
+					{
+						clunetReadingState = CLUNET_READING_STATE_IDLE;
+						/* Проверяем CRC, при успехе начнем обработку принятого пакета */
+						if (!check_crc((char*)dataToRead,clunetReadingCurrentByte))
+							clunet_data_received (
+								dataToRead[CLUNET_OFFSET_SRC_ADDRESS],
+								dataToRead[CLUNET_OFFSET_DST_ADDRESS],
+								dataToRead[CLUNET_OFFSET_COMMAND],
+								(char*)(dataToRead + CLUNET_OFFSET_DATA),
+								dataToRead[CLUNET_OFFSET_SIZE]
+							);
+					}
+					/* Данные получены не полностью, приготовимся для принятия следующего байта */
+					else
+					{
+						clunetReadingCurrentBit = 0;
+						dataToRead[clunetReadingCurrentByte] = 0;
+					}
 				}
-			}				
-			if ((clunetReadingCurrentByte > CLUNET_OFFSET_SIZE) && (clunetReadingCurrentByte > dataToRead[CLUNET_OFFSET_SIZE] + CLUNET_OFFSET_DATA))
-			{
-				// Получили данные полностью, ура!
-				clunetReadingState = CLUNET_READING_STATE_IDLE;
-				/* Проверяем CRC */
-				char crc = check_crc((char*)dataToRead,clunetReadingCurrentByte);
-				if (!crc)
-					clunet_data_received (
-						dataToRead[CLUNET_OFFSET_SRC_ADDRESS],
-						dataToRead[CLUNET_OFFSET_DST_ADDRESS],
-						dataToRead[CLUNET_OFFSET_COMMAND],
-						(char*)(dataToRead+CLUNET_OFFSET_DATA),
-						dataToRead[CLUNET_OFFSET_SIZE]
-					);
+				else // Если буфер закончился, то игнорируем входящий пакет
+					clunetReadingState = CLUNET_READING_STATE_IDLE;
 			}
 		}
 	}	
-	else
-	{
-		clunetTimerStart = CLUNET_TIMER_REG;
-		clunetTimerPeriods = 0;
-		CLUNET_ENABLE_TIMER_OVF;
-	}
 }
 
 void
