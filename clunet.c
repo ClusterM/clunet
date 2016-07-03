@@ -259,14 +259,15 @@ ISR(CLUNET_INT_VECTOR)
 			/* Если значащий бит */
 			if (ticks > (CLUNET_0_T + CLUNET_1_T) / 2)
 				dataToRead[clunetReadingCurrentByte] |= (1 << clunetReadingCurrentBit);
-			if (++clunetReadingCurrentBit & 8)  // Переходим к следующему байту
+			/* Инкрементируем указатель бита, при полной обработке всех 8 бит в байте: */
+			if (++clunetReadingCurrentBit & 8)
 			{
-				/* Получили данные полностью, ура! */
+				/* Проверка на окончание чтения пакета */
 				if ((++clunetReadingCurrentByte > CLUNET_OFFSET_SIZE) && (clunetReadingCurrentByte > dataToRead[CLUNET_OFFSET_SIZE] + CLUNET_OFFSET_DATA))
 				{
 					clunetReadingState = CLUNET_READING_STATE_IDLE;
 					/* Проверяем CRC, при успехе начнем обработку принятого пакета */
-					if (!check_crc((char*)dataToRead,clunetReadingCurrentByte))
+					if (!check_crc((char*)dataToRead, clunetReadingCurrentByte))
 						clunet_data_received (
 							dataToRead[CLUNET_OFFSET_SRC_ADDRESS],
 							dataToRead[CLUNET_OFFSET_DST_ADDRESS],
@@ -275,13 +276,14 @@ ISR(CLUNET_INT_VECTOR)
 							dataToRead[CLUNET_OFFSET_SIZE]
 						);
 				}
+				/* Пакет не прочитан и буфер не закончился */
 				else if (clunetReadingCurrentByte < CLUNET_READ_BUFFER_SIZE)
 				{
 					clunetReadingCurrentBit = 0;
 					dataToRead[clunetReadingCurrentByte] = 0;
 				}
-				else // Если буфер закончился, то игнорируем входящий пакет
-					clunetReadingState = CLUNET_READING_STATE_IDLE;
+				/* Пакет не прочитан. Нехватка приемного буфера - игнорируем */
+				else clunetReadingState = CLUNET_READING_STATE_IDLE;
 			}
 		}
 	}	
