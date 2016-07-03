@@ -261,28 +261,25 @@ ISR(CLUNET_INT_VECTOR)
 				dataToRead[clunetReadingCurrentByte] |= (1 << clunetReadingCurrentBit);
 			if (++clunetReadingCurrentBit & 8)  // Переходим к следующему байту
 			{
-				if (++clunetReadingCurrentByte < CLUNET_READ_BUFFER_SIZE)
+				/* Получили данные полностью, ура! */
+				if ((++clunetReadingCurrentByte > CLUNET_OFFSET_SIZE) && (clunetReadingCurrentByte > dataToRead[CLUNET_OFFSET_SIZE] + CLUNET_OFFSET_DATA))
 				{
-					/* Получили данные полностью, ура! */
-					if ((clunetReadingCurrentByte > CLUNET_OFFSET_SIZE) && (clunetReadingCurrentByte > dataToRead[CLUNET_OFFSET_SIZE] + CLUNET_OFFSET_DATA))
-					{
-						clunetReadingState = CLUNET_READING_STATE_IDLE;
-						/* Проверяем CRC, при успехе начнем обработку принятого пакета */
-						if (!check_crc((char*)dataToRead,clunetReadingCurrentByte))
-							clunet_data_received (
-								dataToRead[CLUNET_OFFSET_SRC_ADDRESS],
-								dataToRead[CLUNET_OFFSET_DST_ADDRESS],
-								dataToRead[CLUNET_OFFSET_COMMAND],
-								(char*)(dataToRead + CLUNET_OFFSET_DATA),
-								dataToRead[CLUNET_OFFSET_SIZE]
-							);
-					}
-					/* Данные получены не полностью, приготовимся для принятия следующего байта */
-					else
-					{
-						clunetReadingCurrentBit = 0;
-						dataToRead[clunetReadingCurrentByte] = 0;
-					}
+					clunetReadingState = CLUNET_READING_STATE_IDLE;
+					/* Проверяем CRC, при успехе начнем обработку принятого пакета */
+					if (!check_crc((char*)dataToRead,clunetReadingCurrentByte))
+						clunet_data_received (
+							dataToRead[CLUNET_OFFSET_SRC_ADDRESS],
+							dataToRead[CLUNET_OFFSET_DST_ADDRESS],
+							dataToRead[CLUNET_OFFSET_COMMAND],
+							(char*)(dataToRead + CLUNET_OFFSET_DATA),
+							dataToRead[CLUNET_OFFSET_SIZE]
+						);
+					return;
+				}
+				if (clunetReadingCurrentByte < CLUNET_READ_BUFFER_SIZE)
+				{
+					clunetReadingCurrentBit = 0;
+					dataToRead[clunetReadingCurrentByte] = 0;
 				}
 				else // Если буфер закончился, то игнорируем входящий пакет
 					clunetReadingState = CLUNET_READING_STATE_IDLE;
