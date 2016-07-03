@@ -274,9 +274,8 @@ ISR(CLUNET_INT_VECTOR)
 							(char*)(dataToRead + CLUNET_OFFSET_DATA),
 							dataToRead[CLUNET_OFFSET_SIZE]
 						);
-					return;
 				}
-				if (clunetReadingCurrentByte < CLUNET_READ_BUFFER_SIZE)
+				else if (clunetReadingCurrentByte < CLUNET_READ_BUFFER_SIZE)
 				{
 					clunetReadingCurrentBit = 0;
 					dataToRead[clunetReadingCurrentByte] = 0;
