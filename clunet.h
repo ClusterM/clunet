@@ -239,6 +239,6 @@ void clunet_set_on_data_received(void (*f)(unsigned char src_address, unsigned c
 // А эта - абсолютно все, которые ходят по сети, включая наши
 void clunet_set_on_data_received_sniff(void (*f)(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size));
 
-char check_crc(char* data, unsigned char size);
+char check_crc(char* data, uint8_t size);
 
 #endif
