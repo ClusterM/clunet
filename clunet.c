@@ -12,8 +12,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-void (*on_data_received)(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size) = 0;
-void (*on_data_received_sniff)(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size) = 0;
+void (*on_data_received)(uint8_t src_address, uint8_t dst_address, uint8_t command, char* data, uint8_t size) = 0;
+void (*on_data_received_sniff)(uint8_t src_address, uint8_t dst_address, uint8_t command, char* data, uint8_t size) = 0;
 
 volatile unsigned char clunetSendingState = CLUNET_SENDING_STATE_IDLE;
 volatile unsigned short int clunetSendingDataLength;
@@ -32,13 +32,14 @@ volatile char dataToSend[CLUNET_SEND_BUFFER_SIZE];
 volatile char dataToRead[CLUNET_READ_BUFFER_SIZE];
 
 char
-check_crc(char* data, unsigned char size)
+check_crc(const char* data, const uint8_t size)
 {
       uint8_t crc = 0;
-      for (uint8_t i = 0; i < size; i++)
+      uint8_t i, j;
+      for (i = 0; i < size; i++)
       {
             uint8_t inbyte = data[i];
-            for (uint8_t j = 0 ; j < 8 ; j++)
+            for (j = 0 ; j < 8 ; j++)
             {
                   uint8_t mix = (crc ^ inbyte) & 1;
                   crc >>= 1;
@@ -133,7 +134,7 @@ clunet_start_send()
 }
 
 void
-clunet_send(unsigned char address, unsigned char prio, unsigned char command, char* data, unsigned char size)
+clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, const char* data, const uint8_t size)
 {
 	if (CLUNET_OFFSET_DATA + size >= CLUNET_SEND_BUFFER_SIZE) return;	// Не хватает буфера
 	CLUNET_DISABLE_TIMER_COMP;						// Прерываем текущую передачу, если есть такая
@@ -146,7 +147,8 @@ clunet_send(unsigned char address, unsigned char prio, unsigned char command, ch
 	dataToSend[CLUNET_OFFSET_DST_ADDRESS] = address;
 	dataToSend[CLUNET_OFFSET_COMMAND] = command;
 	dataToSend[CLUNET_OFFSET_SIZE] = size;
-	for (uint8_t i = 0; i < size; i++)
+	uint8_t i;
+	for (i = 0; i < size; i++)
 		dataToSend[CLUNET_OFFSET_DATA + i] = data[i];
 	dataToSend[CLUNET_OFFSET_DATA + size] = check_crc((char*)dataToSend, CLUNET_OFFSET_DATA + size);
 	clunetSendingDataLength = CLUNET_OFFSET_DATA + size + 1;
@@ -158,8 +160,8 @@ clunet_send(unsigned char address, unsigned char prio, unsigned char command, ch
 }
 
 inline void
-clunet_data_received(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size)
-{	
+clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const uint8_t command, const char* data, const uint8_t size)
+{
 	if (on_data_received_sniff)
 		(*on_data_received_sniff)(src_address, dst_address, command, data, size);
 
@@ -297,7 +299,7 @@ clunet_init()
 	CLUNET_READ_INIT;
 	CLUNET_TIMER_INIT;
 	CLUNET_INIT_INT;
-	uint8_t reset_source = MCUCSR;
+	char reset_source = MCUCSR;
 	clunet_send (
 		CLUNET_BROADCAST_ADDRESS,
 		CLUNET_PRIORITY_MESSAGE,
@@ -314,17 +316,17 @@ clunet_init()
 int
 clunet_ready_to_send()
 {
-	return (clunetSendingState) ? clunetCurrentPrio : 0;
+	return clunetSendingState ? clunetCurrentPrio : 0;
 }
 
 void
-clunet_set_on_data_received(void (*f)(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size))
+clunet_set_on_data_received(void (*f)(uint8_t src_address, uint8_t dst_address, uint8_t command, char* data, uint8_t size))
 {	
 	on_data_received = f;
 }
 
 void
-clunet_set_on_data_received_sniff(void (*f)(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size))
+clunet_set_on_data_received_sniff(void (*f)(uint8_t src_address, uint8_t dst_address, uint8_t command, char* data, uint8_t size))
 {	
 	on_data_received_sniff = f;
 }
