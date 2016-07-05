@@ -149,42 +149,43 @@ clunet_start_send()
 {
 	CLUNET_SEND_0;
 	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)		// Если не нужна пауза...
-		clunetSendingState = CLUNET_SENDING_STATE_INIT;			// Инициализация передачи
+		clunetSendingState = CLUNET_SENDING_STATE_INIT;		// Инициализация передачи
 	clunetSendingCurrentByte = clunetSendingCurrentBit = 0;		// Обнуляем счётчик
-	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + CLUNET_T;			// Планируем таймер, обычно почему-то прерывание срабатывает сразу
-	CLUNET_ENABLE_TIMER_COMP;									// Включаем прерывание сравнения таймера
+	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + CLUNET_T;		// Планируем таймер, обычно почему-то прерывание срабатывает сразу
+	CLUNET_ENABLE_TIMER_COMP;					// Включаем прерывание сравнения таймера
 }
 
 void
 clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, const char* data, const uint8_t size)
 {
+	/* Если размер данных в пределах буфера передачи (максимально для протокола 250 байт) */
 	if (size < (CLUNET_SEND_BUFFER_SIZE - CLUNET_OFFSET_DATA))
 	{
-
-		CLUNET_DISABLE_TIMER_COMP;												// Прерываем текущую передачу, если есть такая
+		/* Прерываем текущую передачу, если есть такая */
+		CLUNET_DISABLE_TIMER_COMP;
 		CLUNET_SEND_0;
 
 		/* Заполняем переменные */
 		if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)
 			clunetSendingState = CLUNET_SENDING_STATE_IDLE;
-
 		clunetCurrentPrio = prio;
-
 		dataToSend[CLUNET_OFFSET_SRC_ADDRESS] = CLUNET_DEVICE_ID;
 		dataToSend[CLUNET_OFFSET_DST_ADDRESS] = address;
 		dataToSend[CLUNET_OFFSET_COMMAND] = command;
 		dataToSend[CLUNET_OFFSET_SIZE] = size;
 		
+		/* Копируем данные в буфер */
 		uint8_t i;
 		for (i = 0; i < size; i++)
 			dataToSend[CLUNET_OFFSET_DATA + i] = data[i];
 
-		dataToSend[CLUNET_OFFSET_DATA + size] = check_crc((char*)dataToSend, size + CLUNET_OFFSET_DATA);
+		/* Добавляем контрольную сумму */
+		dataToSend[CLUNET_OFFSET_DATA + size] = check_crc((char*)dataToSend, CLUNET_OFFSET_DATA + size);
 		
 		clunetSendingDataLength = size + (CLUNET_OFFSET_DATA + 1);
 
 		if (clunetReadingState == CLUNET_READING_STATE_IDLE)		// Если мы ничего не получаем в данный момент, то посылаем сразу
-			clunet_start_send();									// Запускаем передачу сразу
+			clunet_start_send();					// Запускаем передачу сразу
 		else
 			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;	// Иначе ждём линию
 
