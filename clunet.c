@@ -84,9 +84,9 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 		// Проверка на конфликт. Если мы линию не держим, но она уже занята
 		if (!CLUNET_SENDING && CLUNET_READING)
 		{
-			CLUNET_DISABLE_TIMER_COMP;					// Выключаем прерывание сравнения таймера
+			CLUNET_DISABLE_TIMER_COMP;					// Выключаем прерывание сравнения таймера (передачу)
 			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;		// Переходим в режим ожидания линии
-			break;								// И умолкаем
+			break;
 		}
 		
 		CLUNET_SEND_INVERT;	// Инвертируем значение сигнала
@@ -290,7 +290,7 @@ ISR(CLUNET_INT_VECTOR)
 
 		uint8_t ticks = now - clunetTimerStart;	// Вычислим время сигнала в тиках таймера
 
-		/* Если кто-то долго жмёт линию, это инициализация */
+		/* Если кто-то долго жмёт линию (время >= 6.5Т) - это инициализация */
 		if (ticks >= (CLUNET_INIT_T + CLUNET_1_T) / 2)
 			clunetReadingState = CLUNET_READING_STATE_PRIO1;
 
@@ -312,7 +312,7 @@ ISR(CLUNET_INT_VECTOR)
 			/* Чтение данных */
 			case CLUNET_READING_STATE_DATA:
 
-				/* Если бит значащий, то установим его в приемном буфере */
+				/* Если бит значащий (время > 2Т), то установим его в приемном буфере */
 				if (ticks > (CLUNET_0_T + CLUNET_1_T) / 2)
 					dataToRead[clunetReadingCurrentByte] |= (1 << clunetReadingCurrentBit);
 
