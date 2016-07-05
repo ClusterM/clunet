@@ -245,10 +245,9 @@ clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const
 /* Процедура прерывания переполнения таймера */
 ISR(CLUNET_TIMER_OVF_VECTOR)
 {
-
+	/* Считаем периоды переполнения таймера */
 	if (clunetTimerPeriods < 3)
 		clunetTimerPeriods++;
-
 	/* Слишком долго нет сигнала */
 	else
 	{
