@@ -32,7 +32,18 @@ volatile uint8_t clunetTimerPeriods = 0;
 volatile char dataToSend[CLUNET_SEND_BUFFER_SIZE];
 volatile char dataToRead[CLUNET_READ_BUFFER_SIZE];
 
-static char
+static void
+clunet_start_send()
+{
+	CLUNET_SEND_0;
+	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)		// Если не нужна пауза...
+		clunetSendingState = CLUNET_SENDING_STATE_INIT;		// Инициализация передачи
+	clunetSendingCurrentByte = clunetSendingCurrentBit = 0;		// Обнуляем счётчик
+	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + CLUNET_T;		// Планируем таймер, обычно почему-то прерывание срабатывает сразу
+	CLUNET_ENABLE_TIMER_COMP;					// Включаем прерывание сравнения таймера
+}
+
+static inline char
 check_crc(const char* data, const uint8_t size)
 {
       uint8_t crc = 0;
@@ -49,6 +60,56 @@ check_crc(const char* data, const uint8_t size)
             }
       }
       return crc;
+}
+
+static inline void
+clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const uint8_t command, char* data, const uint8_t size)
+{
+	if (on_data_received_sniff)
+		(*on_data_received_sniff)(src_address, dst_address, command, data, size);
+
+	if (src_address == CLUNET_DEVICE_ID) return;	// Игнорируем сообщения от самого себя!
+
+	if ((dst_address != CLUNET_DEVICE_ID) &&
+		(dst_address != CLUNET_BROADCAST_ADDRESS)) return;	// Игнорируем сообщения не для нас
+
+	// Команда перезагрузки. Перезагрузка по сторожевому таймеру.
+	if (command == CLUNET_COMMAND_REBOOT)
+	{
+		cli();
+		set_bit(WDTCR, WDE);
+		while(1);
+	}
+
+	if ((clunetSendingState == CLUNET_SENDING_STATE_IDLE) || (clunetCurrentPrio <= CLUNET_PRIORITY_MESSAGE))
+	{
+		if (command == CLUNET_COMMAND_DISCOVERY)	// Ответ на поиск устройств
+		{
+			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
+#ifdef CLUNET_DEVICE_NAME
+			char buf[] = CLUNET_DEVICE_NAME;
+			uint8_t len = 0; while(buf[len]) len++;
+			clunet_send(src_address, CLUNET_PRIORITY_MESSAGE, CLUNET_COMMAND_DISCOVERY_RESPONSE, buf, len);
+#else
+			clunet_send(src_address, CLUNET_PRIORITY_MESSAGE, CLUNET_COMMAND_DISCOVERY_RESPONSE, 0, 0);
+#endif
+		}
+		else if (command == CLUNET_COMMAND_PING)	// Ответ на пинг
+		{
+			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
+			clunet_send(src_address, CLUNET_PRIORITY_COMMAND, CLUNET_COMMAND_PING_REPLY, data, size);
+		}
+	}
+	
+	if (on_data_received)
+		(*on_data_received)(src_address, dst_address, command, data, size);
+	
+	/* Если есть неотосланные данные, шлём, линия освободилась */
+	if ((clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE) && !CLUNET_READING)
+	{
+		clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
+		clunet_start_send();
+	}
 }
 
 /* Процедура прерывания сравнения таймера */
@@ -143,18 +204,6 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 	}
 }
 
-
-void
-clunet_start_send()
-{
-	CLUNET_SEND_0;
-	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)		// Если не нужна пауза...
-		clunetSendingState = CLUNET_SENDING_STATE_INIT;		// Инициализация передачи
-	clunetSendingCurrentByte = clunetSendingCurrentBit = 0;		// Обнуляем счётчик
-	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + CLUNET_T;		// Планируем таймер, обычно почему-то прерывание срабатывает сразу
-	CLUNET_ENABLE_TIMER_COMP;					// Включаем прерывание сравнения таймера
-}
-
 void
 clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, const char* data, const uint8_t size)
 {
@@ -189,56 +238,6 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 		else
 			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;	// Иначе ждём линию
 
-	}
-}
-
-static inline void
-clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const uint8_t command, char* data, const uint8_t size)
-{
-	if (on_data_received_sniff)
-		(*on_data_received_sniff)(src_address, dst_address, command, data, size);
-
-	if (src_address == CLUNET_DEVICE_ID) return;	// Игнорируем сообщения от самого себя!
-
-	if ((dst_address != CLUNET_DEVICE_ID) &&
-		(dst_address != CLUNET_BROADCAST_ADDRESS)) return;	// Игнорируем сообщения не для нас
-
-	// Команда перезагрузки. Перезагрузка по сторожевому таймеру.
-	if (command == CLUNET_COMMAND_REBOOT)
-	{
-		cli();
-		set_bit(WDTCR, WDE);
-		while(1);
-	}
-
-	if ((clunetSendingState == CLUNET_SENDING_STATE_IDLE) || (clunetCurrentPrio <= CLUNET_PRIORITY_MESSAGE))
-	{
-		if (command == CLUNET_COMMAND_DISCOVERY)	// Ответ на поиск устройств
-		{
-			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
-#ifdef CLUNET_DEVICE_NAME
-			char buf[] = CLUNET_DEVICE_NAME;
-			uint8_t len = 0; while(buf[len]) len++;
-			clunet_send(src_address, CLUNET_PRIORITY_MESSAGE, CLUNET_COMMAND_DISCOVERY_RESPONSE, buf, len);
-#else
-			clunet_send(src_address, CLUNET_PRIORITY_MESSAGE, CLUNET_COMMAND_DISCOVERY_RESPONSE, 0, 0);
-#endif
-		}
-		else if (command == CLUNET_COMMAND_PING)	// Ответ на пинг
-		{
-			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
-			clunet_send(src_address, CLUNET_PRIORITY_COMMAND, CLUNET_COMMAND_PING_REPLY, data, size);
-		}
-	}
-	
-	if (on_data_received)
-		(*on_data_received)(src_address, dst_address, command, data, size);
-	
-	/* Если есть неотосланные данные, шлём, линия освободилась */
-	if ((clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE) && !CLUNET_READING)
-	{
-		clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
-		clunet_start_send();
 	}
 }
 
@@ -376,7 +375,7 @@ clunet_init()
 /*
 	Возвращает 0, если готов к передаче, иначе приоритет текущей задачи
 */
-int
+uint8_t
 clunet_ready_to_send()
 {
 	return clunetSendingState ? clunetCurrentPrio : 0;
