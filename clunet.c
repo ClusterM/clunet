@@ -32,7 +32,7 @@ volatile uint8_t clunetTimerPeriods = 0;
 volatile char dataToSend[CLUNET_SEND_BUFFER_SIZE];
 volatile char dataToRead[CLUNET_READ_BUFFER_SIZE];
 
-char
+static char
 check_crc(const char* data, const uint8_t size)
 {
       uint8_t crc = 0;
