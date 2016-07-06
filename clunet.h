@@ -227,7 +227,7 @@
 void clunet_init();
 
 // Возвращает 0, если готов к передаче, иначе приоритет текущей задачи
-int clunet_ready_to_send();
+uint8_t clunet_ready_to_send();
 
 // Отправка пакета
 void clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, const char* data, const uint8_t size);
