@@ -192,7 +192,7 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 	}
 }
 
-inline void
+static inline void
 clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const uint8_t command, char* data, const uint8_t size)
 {
 	if (on_data_received_sniff)
