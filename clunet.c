@@ -172,14 +172,14 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 			/* Фаза передачи приоритета (старший бит) */
 			case CLUNET_SENDING_STATE_PRIO1:
 	
-				CLUNET_TIMER_REG_OCR = now + (clunetCurrentPrio > 2 ? CLUNET_1_T : CLUNET_0_T);
+				CLUNET_TIMER_REG_OCR = now + ((clunetCurrentPrio > 2) ? CLUNET_1_T : CLUNET_0_T);
 				clunetSendingState++;	// К следующей фазе передачи младшего бита приоритета
 				break;
 	
 			/* Фаза передачи приоритета (младший бит) */
 			case CLUNET_SENDING_STATE_PRIO2:
 	
-				CLUNET_TIMER_REG_OCR = now + (clunetCurrentPrio & 1 ? CLUNET_0_T : CLUNET_1_T);
+				CLUNET_TIMER_REG_OCR = now + ((clunetCurrentPrio & 1) ? CLUNET_0_T : CLUNET_1_T);
 				clunetSendingState++;	// К следующей фазе передачи данных
 				break;
 	
@@ -187,7 +187,7 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 			case CLUNET_SENDING_STATE_DATA:
 	
 				// Планируем следующее прерывание чтобы отпустить линию в зависимости от значения бита
-				CLUNET_TIMER_REG_OCR = now + (dataToSend[clunetSendingCurrentByte] & (1 << clunetSendingCurrentBit) ? CLUNET_1_T : CLUNET_0_T);
+				CLUNET_TIMER_REG_OCR = now + ((dataToSend[clunetSendingCurrentByte] & (1 << clunetSendingCurrentBit)) ? CLUNET_1_T : CLUNET_0_T);
 	
 				/* Если передан байт данных */
 				if (++clunetSendingCurrentBit & 8)
