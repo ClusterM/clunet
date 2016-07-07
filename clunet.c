@@ -142,7 +142,7 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 	/* Этот блок кода может прижать линию к земле */
 	default:
 
-		// Проверка на конфликт. Если мы линию не держим, но она уже занята
+		// Арбитраж. Если мы линию не держим, но она уже занята.
 		if (!CLUNET_SENDING && CLUNET_READING)
 		{
 			CLUNET_DISABLE_TIMER_COMP;					// Выключаем прерывание сравнения таймера (передачу)
@@ -286,6 +286,12 @@ ISR(CLUNET_INT_VECTOR)
 	/* Если линию прижало к нулю */
 	if (CLUNET_READING)
 	{
+		/* Если мы в режиме передачи и прижали не мы, то в арбитраже не участвуем и ждем */
+		if (clunetSendingState && !CLUNET_SENDING)
+		{
+			CLUNET_DISABLE_TIMER_COMP;
+			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;
+		}
 		clunetTimerStart = now;		// Запомним время начала сигнала
 		clunetTimerPeriods = 0;		// Сбросим счетчик периодов таймера
 	}
