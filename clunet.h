@@ -8,34 +8,34 @@
 #ifndef __clunet_h_included__
 #define __clunet_h_included__
 
+#include <stdint.h>
 #include "bits.h"
 #include "clunet_config.h"
 
 #define CLUNET_SENDING_STATE_IDLE 0
-#define CLUNET_SENDING_STATE_INIT 1
-#define CLUNET_SENDING_STATE_PRIO1 2
-#define CLUNET_SENDING_STATE_PRIO2 3
-#define CLUNET_SENDING_STATE_DATA 4
-#define CLUNET_SENDING_STATE_WAITING_LINE 6
-#define CLUNET_SENDING_STATE_PREINIT 7
-#define CLUNET_SENDING_STATE_STOP 8
-#define CLUNET_SENDING_STATE_DONE 9
+#define CLUNET_SENDING_STATE_PREINIT 1
+#define CLUNET_SENDING_STATE_INIT 2
+#define CLUNET_SENDING_STATE_PRIO1 3
+#define CLUNET_SENDING_STATE_PRIO2 4
+#define CLUNET_SENDING_STATE_DATA 5
+#define CLUNET_SENDING_STATE_STOP 6
+#define CLUNET_SENDING_STATE_DONE 7
+#define CLUNET_SENDING_STATE_WAITING_LINE 8
 
 #define CLUNET_READING_STATE_IDLE 0
 #define CLUNET_READING_STATE_INIT 1
 #define CLUNET_READING_STATE_PRIO1 2
 #define CLUNET_READING_STATE_PRIO2 3
-#define CLUNET_READING_STATE_HEADER 4
-#define CLUNET_READING_STATE_DATA 5
+#define CLUNET_READING_STATE_DATA 4
 
 #define CLUNET_OFFSET_SRC_ADDRESS 0
 #define CLUNET_OFFSET_DST_ADDRESS 1
 #define CLUNET_OFFSET_COMMAND 2
 #define CLUNET_OFFSET_SIZE 3
 #define CLUNET_OFFSET_DATA 4
-#define CLUNET_BROADCAST_ADDRESS 0xFF
+#define CLUNET_BROADCAST_ADDRESS 255
 
-#define CLUNET_COMMAND_DISCOVERY 0x00
+#define CLUNET_COMMAND_DISCOVERY	0
 /* Поиск других устройств, параметров нет */
 
 #define CLUNET_COMMAND_DISCOVERY_RESPONSE 0x01
@@ -226,19 +226,17 @@
 // Инициализация
 void clunet_init();
 
-// Отправка пакета
-void clunet_send(unsigned char address, unsigned char prio, unsigned char command, char* data, unsigned char size);
-
 // Возвращает 0, если готов к передаче, иначе приоритет текущей задачи
-int clunet_ready_to_send();
+uint8_t clunet_ready_to_send();
+
+// Отправка пакета
+void clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, const char* data, const uint8_t size);
 
 // Установка функций, которые вызываются при получении пакетов
 // Эта - получает пакеты, которые адресованы нам
-void clunet_set_on_data_received(void (*f)(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size));
+void clunet_set_on_data_received(void (*f)(uint8_t src_address, uint8_t dst_address, uint8_t command, char* data, uint8_t size));
 
 // А эта - абсолютно все, которые ходят по сети, включая наши
-void clunet_set_on_data_received_sniff(void (*f)(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size));
-
-char check_crc(char* data, unsigned char size);
+void clunet_set_on_data_received_sniff(void (*f)(uint8_t src_address, uint8_t dst_address, uint8_t command, char* data, uint8_t size));
 
 #endif
