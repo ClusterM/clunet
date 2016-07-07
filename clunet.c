@@ -231,10 +231,12 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 		
 		clunetSendingDataLength = size + (CLUNET_OFFSET_DATA + 1);
 
-		if (clunetReadingState == CLUNET_READING_STATE_IDLE)		// Если мы ничего не получаем в данный момент, то посылаем сразу
-			clunet_start_send();					// Запускаем передачу сразу
+		/* Если мы что-то получаем в данный момент, то ожидаем линию */
+		// TODO: может возникнуть ситуация, что мы прервав собственную передачу, будем вынуждены ожидать линию, которую освободили выше
+		if (clunetReadingState)
+			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;
 		else
-			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;	// Иначе ждём линию
+			clunet_start_send();	// Иначе запускаем передачу
 
 	}
 }
