@@ -211,8 +211,11 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 	if (size < (CLUNET_SEND_BUFFER_SIZE - CLUNET_OFFSET_DATA))
 	{
 		/* Прерываем текущую передачу, если есть такая */
-		CLUNET_DISABLE_TIMER_COMP;
-		CLUNET_SEND_0;
+		if (clunetSendingState)
+		{
+			CLUNET_DISABLE_TIMER_COMP;
+			CLUNET_SEND_0;
+		}
 
 		/* Заполняем переменные */
 		clunetCurrentPrio = (!prio) ? 1 : (prio > 4) ? 4 : prio;	// Ограничим приоритет диапазоном (1 ; 4)
@@ -231,12 +234,15 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 		
 		clunetSendingDataLength = size + (CLUNET_OFFSET_DATA + 1);
 
-		/* Если мы что-то получаем в данный момент, то ожидаем линию */
 		// TODO: может возникнуть ситуация, что мы прервав собственную передачу, будем вынуждены ожидать линию, которую освободили выше
-		if (clunetReadingState)
-			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;
+		// TODO: если пакет принимается размером больше, чем приемный буфер, то clunetReadingState = 0 - запустится передача, что приведет к конфликту
+
+		/* Если ничего не принимаем или принимаем, но от самого себя, то немедленно запускаем передачу, данные подготовлены */
+		if (!clunetReadingState || clunetSendingState) // Исправить!!!
+			clunet_start_send();
+		/* Иначе ожидаем линию */
 		else
-			clunet_start_send();	// Иначе запускаем передачу
+			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;
 
 	}
 }
