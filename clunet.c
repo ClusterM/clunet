@@ -188,7 +188,6 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 		}
 
 		/* Заполняем переменные */
-		if (prio)
 		clunetCurrentPrio = (prio > 4) ? 4 : prio ? : 1;	// Ограничим приоритет диапазоном (1 ; 4)
 		dataToSend[CLUNET_OFFSET_SRC_ADDRESS] = CLUNET_DEVICE_ID;
 		dataToSend[CLUNET_OFFSET_DST_ADDRESS] = address;
