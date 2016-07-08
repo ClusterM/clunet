@@ -204,7 +204,12 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 		
 		clunetSendingDataLength = size + (CLUNET_OFFSET_DATA + 1);
 
-		clunet_start_send();	// Запускаем отправку данных и полагаемся на нашу отработку конфликтов при чтении и отправки
+		// Если линия свободна, то запланируем передачу сразу
+		if (!CLUNET_READING)
+			clunet_start_send();
+		// Иначе будем ожидать когда освободится в процедуре внешнего прерывания
+		else
+			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;
 
 	}
 }
@@ -231,7 +236,7 @@ ISR(CLUNET_INT_VECTOR)
 	/* Иначе если линию отпустило */
 	else
 	{
-		/* Надеемся на то, что линию освободило совсем и пробуем запланировать отправку, если нет, то конфликт будет 100% отработан */
+		/* Линия свободна, пробуем запланировать отправку */
 		if (clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE)
 			clunet_start_send();
 
@@ -245,16 +250,6 @@ ISR(CLUNET_INT_VECTOR)
 		else
 			switch (clunetReadingState)
 			{
-			
-			/* Получение приоритета (младший бит), клиенту он не нужен */
-			case CLUNET_READING_STATE_PRIO2:
-				clunetReadingCurrentByte = clunetReadingCurrentBit = 0;
-				dataToRead[0] = 0;
-
-			/* Получение приоритета (старший бит), клиенту он не нужен */
-			case CLUNET_READING_STATE_PRIO1:
-				clunetReadingState++;
-				break;
 			
 			/* Чтение данных */
 			case CLUNET_READING_STATE_DATA:
@@ -297,6 +292,16 @@ ISR(CLUNET_INT_VECTOR)
 						clunetReadingState = CLUNET_READING_STATE_IDLE;
 
 				}
+				break;
+
+			/* Получение приоритета (младший бит), клиенту он не нужен */
+			case CLUNET_READING_STATE_PRIO2:
+				clunetReadingCurrentByte = clunetReadingCurrentBit = 0;
+				dataToRead[0] = 0;
+
+			/* Получение приоритета (старший бит), клиенту он не нужен */
+			case CLUNET_READING_STATE_PRIO1:
+				clunetReadingState++;
 
 			}
 	}
