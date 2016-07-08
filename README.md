@@ -26,7 +26,7 @@ You need a pin with an external interrupt to read data and any other pin to send
 
 ### Software part
 
-You will need one free 8-bit timer with `output compare match` and `overflow` interrupts.
+You will need one free 8-bit timer with `output compare match` interrupt.
 
 
 #### Configuration####
