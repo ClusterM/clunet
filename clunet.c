@@ -106,20 +106,16 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 {
 	uint8_t now = CLUNET_TIMER_REG;   				// Запоминаем текущее значение таймера
 	
-	switch (clunetSendingState)
+	/* Если достигли фазы завершения передачи, то завершим ее и освободим передатчик */
+	if (clunetSendingState == CLUNET_SENDING_STATE_DONE)
 	{
-	
-	/* Завершение передачи и освобождение передатчика */
-	case CLUNET_SENDING_STATE_DONE:
-
 		CLUNET_DISABLE_TIMER_COMP;				// Выключаем прерывание сравнения таймера
 		clunetSendingState = CLUNET_SENDING_STATE_IDLE;		// Указываем, что передатчик свободен
 		CLUNET_SEND_0;						// Отпускаем линию
-		break;
-
-	/* Этот блок кода может прижать линию к земле */
-	default:
-
+	}
+	/* Иначе если передача активна */
+	else
+	{
 		// Арбитраж. Если мы линию не держим, но она уже занята.
 		if (!CLUNET_SENDING && CLUNET_READING)
 		{
@@ -139,7 +135,24 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 		else
 			switch (clunetSendingState)
 			{
+			/* Фаза передачи данных */
+			case CLUNET_SENDING_STATE_DATA:
 	
+				// Планируем следующее прерывание чтобы отпустить линию в зависимости от значения бита
+				CLUNET_TIMER_REG_OCR = now + ((dataToSend[clunetSendingCurrentByte] & (1 << clunetSendingCurrentBit)) ? CLUNET_1_T : CLUNET_0_T);
+	
+				/* Если передан байт данных */
+				if (++clunetSendingCurrentBit & 8)
+				{
+					/* и не все данные отосланы */
+					if (++clunetSendingCurrentByte < clunetSendingDataLength)
+						clunetSendingCurrentBit = 0;	// то начинаем передачу следующего байта с бита 0
+					/* и передача всех данных закончена */
+					else
+						clunetSendingState++;		// то переходим к следующей фазе завершения передачи пакета
+				}
+				break;
+
 			/* Фаза инициализации передачи пакета (время 10Т) */
 			case CLUNET_SENDING_STATE_INIT:
 	
@@ -160,25 +173,6 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 				CLUNET_TIMER_REG_OCR = now + ((clunetCurrentPrio & 1) ? CLUNET_0_T : CLUNET_1_T);
 				clunetSendingCurrentByte = clunetSendingCurrentBit = 0;	// Обнуляем счётчик
 				clunetSendingState++;	// К следующей фазе передачи данных
-				break;
-	
-			/* Фаза передачи данных */
-			case CLUNET_SENDING_STATE_DATA:
-	
-				// Планируем следующее прерывание чтобы отпустить линию в зависимости от значения бита
-				CLUNET_TIMER_REG_OCR = now + ((dataToSend[clunetSendingCurrentByte] & (1 << clunetSendingCurrentBit)) ? CLUNET_1_T : CLUNET_0_T);
-	
-				/* Если передан байт данных */
-				if (++clunetSendingCurrentBit & 8)
-				{
-					/* и не все данные отосланы */
-					if (++clunetSendingCurrentByte < clunetSendingDataLength)
-						clunetSendingCurrentBit = 0;	// то начинаем передачу следующего байта с бита 0
-					/* и передача всех данных закончена */
-					else
-						clunetSendingState++;		// то переходим к следующей фазе завершения передачи пакета
-				}
-	
 			}
 	}
 }
