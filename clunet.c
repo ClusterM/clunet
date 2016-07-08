@@ -34,6 +34,7 @@ volatile char dataToRead[CLUNET_READ_BUFFER_SIZE];
 static inline void
 clunet_start_send()
 {
+	CLUNET_SEND_0; // На всякий случай *******
 	clunetSendingState = CLUNET_SENDING_STATE_INIT;
 	// подождем 1.5Т, чтобы нас гарантированно могли остановить при передаче на линии со стороны другого устройства в процедуре внешнего прерывания
 	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + (10*CLUNET_T);
@@ -181,11 +182,11 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 	if (size < (CLUNET_SEND_BUFFER_SIZE - CLUNET_OFFSET_DATA))
 	{
 		/* Прерываем текущую передачу, если есть такая */
-		if (clunetSendingState)
-		{
+	//	if (clunetSendingState)
+	//	{
 			CLUNET_DISABLE_TIMER_COMP;
 			CLUNET_SEND_0;
-		}
+	//	}
 
 		/* Заполняем переменные */
 		clunetCurrentPrio = (prio > 4) ? 4 : prio ? : 1;	// Ограничим приоритет диапазоном (1 ; 4)
