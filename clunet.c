@@ -80,10 +80,9 @@ clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const
 
 	if ((clunetSendingState == CLUNET_SENDING_STATE_IDLE) || (clunetCurrentPrio <= CLUNET_PRIORITY_MESSAGE))
 	{
-		switch (command)
-		{
 		/* Ответ на поиск устройств */
-		case CLUNET_COMMAND_DISCOVERY:
+		if (command == CLUNET_COMMAND_DISCOVERY)
+		{
 #ifdef CLUNET_DEVICE_NAME
 			char buf[] = CLUNET_DEVICE_NAME;
 			uint8_t len = 0; while(buf[len]) len++;
@@ -91,11 +90,10 @@ clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const
 #else
 			clunet_send(src_address, CLUNET_PRIORITY_MESSAGE, CLUNET_COMMAND_DISCOVERY_RESPONSE, 0, 0);
 #endif
-		break;
-		/* Ответ на пинг */
-		case CLUNET_COMMAND_PING:
-			clunet_send(src_address, CLUNET_PRIORITY_COMMAND, CLUNET_COMMAND_PING_REPLY, data, size);
 		}
+		/* Ответ на пинг */
+		else if (command == CLUNET_COMMAND_PING)
+			clunet_send(src_address, CLUNET_PRIORITY_COMMAND, CLUNET_COMMAND_PING_REPLY, data, size);
 	}
 
 	if (on_data_received)
