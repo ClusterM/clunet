@@ -47,7 +47,7 @@
 #define CLUNET_TIMER_REG_OCR OCR2
 
 /* How to enable and disable timer interrupts */
-#define CLUNET_ENABLE_TIMER_COMP {set_bit(TIMSK, OCIE2);set_bit(TIFR, OCF2);}
+#define CLUNET_ENABLE_TIMER_COMP {set_bit(TIFR, OCF2);set_bit(TIMSK, OCIE2);}
 #define CLUNET_DISABLE_TIMER_COMP unset_bit(TIMSK, OCIE2)
 
 /* How to init and enable external interrupt (read pin) */
