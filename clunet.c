@@ -113,24 +113,21 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 		clunetSendingState = CLUNET_SENDING_STATE_IDLE;		// Указываем, что передатчик свободен
 		CLUNET_SEND_0;						// Отпускаем линию
 	}
-	/* Иначе если передача активна */
+	/* Иначе если передачу необходимо продолжить, то сначала проверим на конфликт */
+	else if (!CLUNET_SENDING && CLUNET_READING)
+	{
+		CLUNET_DISABLE_TIMER_COMP;					// Выключаем прерывание сравнения таймера (передачу)
+		clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;		// Переходим в режим ожидания линии
+	}
+	/* Все в порядке, можем продолжать */
 	else
 	{
-		// Арбитраж. Если мы линию не держим, но она уже занята.
-		if (!CLUNET_SENDING && CLUNET_READING)
-		{
-			CLUNET_DISABLE_TIMER_COMP;					// Выключаем прерывание сравнения таймера (передачу)
-			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;		// Переходим в режим ожидания линии
-			break;
-		}
-		
 		CLUNET_SEND_INVERT;	// Инвертируем значение сигнала
 		
 		/* Если отпустили линию */
 		if (!CLUNET_SENDING)
-
 			CLUNET_TIMER_REG_OCR = now + CLUNET_T;	// то запланируем время паузы перед следующей передачей длительностью 1Т
-
+	
 		/* Если прижали линию к земле, то запланируем время передачи сигнала в зависимости от текущей фазы передачи */
 		else
 			switch (clunetSendingState)
@@ -155,7 +152,7 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 
 			/* Фаза инициализации передачи пакета (время 10Т) */
 			case CLUNET_SENDING_STATE_INIT:
-	
+
 				CLUNET_TIMER_REG_OCR = now + CLUNET_INIT_T;	// Планируем следующее прерывание
 				clunetSendingState++;				// К следующей фазе передачи старшего бита приоритета
 				break;
