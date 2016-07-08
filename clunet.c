@@ -127,47 +127,37 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 			CLUNET_TIMER_REG_OCR += CLUNET_T;
 	
 		/* Если прижали линию к земле, то запланируем время передачи сигнала в зависимости от текущей фазы передачи */
-		else
-			switch (clunetSendingState)
+		/* Фаза передачи данных */
+		else if (clunetSendingState == CLUNET_SENDING_STATE_DATA)
+		{
+			/* Планируем следующее прерывание в зависимости от значения бита */
+			CLUNET_TIMER_REG_OCR += ((dataToSend[clunetSendingCurrentByte] & (1 << clunetSendingCurrentBit)) ? CLUNET_1_T : CLUNET_0_T);
+			/* Если передан байт данных */
+			if (++clunetSendingCurrentBit & 8)
 			{
-			/* Фаза передачи данных */
-			case CLUNET_SENDING_STATE_DATA:
-	
-				// Планируем следующее прерывание чтобы отпустить линию в зависимости от значения бита
-				CLUNET_TIMER_REG_OCR += ((dataToSend[clunetSendingCurrentByte] & (1 << clunetSendingCurrentBit)) ? CLUNET_1_T : CLUNET_0_T);
-	
-				/* Если передан байт данных */
-				if (++clunetSendingCurrentBit & 8)
-				{
-					/* Если не все данные отосланы */
-					if (++clunetSendingCurrentByte < clunetSendingDataLength)
-						clunetSendingCurrentBit = 0;	// начинаем передачу следующего байта с бита 0
-					/* Иначе передача всех данных закончена */
-					else
-						clunetSendingState++;		// переходим к следующей фазе завершения передачи пакета
-				}
-				break;
-
+				/* Если не все данные отосланы */
+				if (++clunetSendingCurrentByte < clunetSendingDataLength)
+					clunetSendingCurrentBit = 0;	// начинаем передачу следующего байта с бита 0
+				/* Иначе передача всех данных закончена */
+				else
+					clunetSendingState++;		// переходим к следующей фазе завершения передачи пакета
+			}
+		}
+		else
+			switch (clunetSendingState++)
+			{
 			/* Фаза инициализации передачи пакета (время 10Т) */
 			case CLUNET_SENDING_STATE_INIT:
-
-				CLUNET_TIMER_REG_OCR += CLUNET_INIT_T;	// Планируем следующее прерывание
-				clunetSendingState++;			// К следующей фазе передачи старшего бита приоритета
+				CLUNET_TIMER_REG_OCR += CLUNET_INIT_T;
 				break;
-	
 			/* Фаза передачи приоритета (старший бит) */
 			case CLUNET_SENDING_STATE_PRIO1:
-	
 				CLUNET_TIMER_REG_OCR += ((clunetCurrentPrio > 2) ? CLUNET_1_T : CLUNET_0_T);
-				clunetSendingState++;	// К следующей фазе передачи младшего бита приоритета
 				break;
-	
 			/* Фаза передачи приоритета (младший бит) */
 			case CLUNET_SENDING_STATE_PRIO2:
-	
 				CLUNET_TIMER_REG_OCR += ((clunetCurrentPrio & 1) ? CLUNET_0_T : CLUNET_1_T);
-				clunetSendingCurrentByte = clunetSendingCurrentBit = 0;		// Готовим счётчики передачи данных
-				clunetSendingState++;	// К следующей фазе передачи данных
+				clunetSendingCurrentByte = clunetSendingCurrentBit = 0;	// Готовим счётчики передачи данных
 			}
 	}
 }
