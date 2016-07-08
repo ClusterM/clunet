@@ -239,12 +239,7 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 		// что приведет либо к разрешимому конфликту и стадии ожидания линии или прервет чужую передачу даже с максимальным приоритетом
 		// придется делать проверку на конфликт в процедуре чтения по внешнему прерыванию
 
-		/* Если ничего не принимаем, то немедленно запускаем передачу, данные подготовлены */
-		if (!clunetReadingState)
-			clunet_start_send();
-		/* Иначе ожидаем линию */
-		else
-			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;
+		clunet_start_send();
 
 	}
 }
