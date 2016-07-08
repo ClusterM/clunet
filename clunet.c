@@ -36,7 +36,7 @@ clunet_start_send()
 {
 	clunetSendingState = CLUNET_SENDING_STATE_INIT;
 	// подождем 1.5Т, чтобы нас гарантированно могли остановить при передаче на линии со стороны другого устройства в процедуре внешнего прерывания
-	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + (CLUNET_T + CLUNET_T / 2);
+	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + (10*CLUNET_T);
 	CLUNET_ENABLE_TIMER_COMP;	// Включаем прерывание сравнения таймера (передачу)
 }
 
