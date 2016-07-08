@@ -111,21 +111,14 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 	switch (clunetSendingState)
 	{
 	
-	/* Завершение передачи */
-	case CLUNET_SENDING_STATE_STOP:
-
-		CLUNET_SEND_0;						// Отпускаем линию
-		CLUNET_TIMER_REG_OCR = now + CLUNET_T;
-		clunetSendingState++;					// Начинаем следующую фазу
-		break;
-	
-	/* Освобождение передатчика */
+	/* Завершение передачи и освобождение передатчика */
 	case CLUNET_SENDING_STATE_DONE:
-	
+
 		CLUNET_DISABLE_TIMER_COMP;				// Выключаем прерывание сравнения таймера
 		clunetSendingState = CLUNET_SENDING_STATE_IDLE;		// Указываем, что передатчик свободен
+		CLUNET_SEND_0;						// Отпускаем линию
 		break;
-	
+
 	/* Этот блок кода может прижать линию к земле */
 	default:
 
