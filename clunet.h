@@ -154,6 +154,9 @@
 #define CLUNET_COMMAND_WINDOW_INFO_REQUEST 0x23
 /* Запрашивает текущее состояние окна */
 
+#define CLUNET_COMMAND_DOOR_BELL 0x24
+/* Звонок в дверь */
+
 #define CLUNET_COMMAND_PING 0xFE
 /* Пинг, на эту команду устройство должно ответить следующей командой, возвратив весь буфер */
 
