@@ -35,7 +35,7 @@ volatile char dataToRead[CLUNET_READ_BUFFER_SIZE];
 static inline void
 clunet_start_send()
 {
-	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)
+//	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)
 		clunetSendingState = CLUNET_SENDING_STATE_INIT;
 	// подождем 1.5Т, чтобы нас гарантированно могли остановить при передаче на линии со стороны другого устройства в процедуре внешнего прерывания
 	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + (CLUNET_T + CLUNET_T / 2);
@@ -84,7 +84,7 @@ clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const
 	{
 		if (command == CLUNET_COMMAND_DISCOVERY)	// Ответ на поиск устройств
 		{
-			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
+//			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
 #ifdef CLUNET_DEVICE_NAME
 			char buf[] = CLUNET_DEVICE_NAME;
 			uint8_t len = 0; while(buf[len]) len++;
@@ -95,7 +95,7 @@ clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const
 		}
 		else if (command == CLUNET_COMMAND_PING)	// Ответ на пинг
 		{
-			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
+//			clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
 			clunet_send(src_address, CLUNET_PRIORITY_COMMAND, CLUNET_COMMAND_PING_REPLY, data, size);
 		}
 	}
@@ -104,11 +104,12 @@ clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const
 		(*on_data_received)(src_address, dst_address, command, data, size);
 	
 	/* Если есть неотосланные данные, шлём, линия освободилась */
-	if ((clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE) && !CLUNET_READING)
+/*	if ((clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE) && !CLUNET_READING)
 	{
-		clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
+//		clunetSendingState = CLUNET_SENDING_STATE_PREINIT;
 		clunet_start_send();
 	}
+	*/
 }
 
 /* Процедура прерывания сравнения таймера */
@@ -125,7 +126,7 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 		CLUNET_SEND_0;						// Отпускаем линию
 
 	/* Нужно подождать перед отправкой */
-	case CLUNET_SENDING_STATE_PREINIT:
+//	case CLUNET_SENDING_STATE_PREINIT:
 
 		CLUNET_TIMER_REG_OCR = now + CLUNET_T;
 		clunetSendingState++;					// Начинаем следующую фазу
