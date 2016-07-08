@@ -27,21 +27,19 @@ volatile uint8_t clunetReadingCurrentBit;
 volatile uint8_t clunetCurrentPrio;
 
 volatile uint8_t clunetTimerStart = 0;
-volatile uint8_t clunetTimerPeriods = 0;
+//volatile uint8_t clunetTimerPeriods = 0;
 
 volatile char dataToSend[CLUNET_SEND_BUFFER_SIZE];
 volatile char dataToRead[CLUNET_READ_BUFFER_SIZE];
 
-static void
+static inline void
 clunet_start_send()
 {
-	CLUNET_SEND_0;
-	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)		// Если не нужна пауза...
-		clunetSendingState = CLUNET_SENDING_STATE_INIT;		// Инициализация передачи
-	clunetSendingCurrentByte = clunetSendingCurrentBit = 0;		// Обнуляем счётчик
+	if (clunetSendingState != CLUNET_SENDING_STATE_PREINIT)
+		clunetSendingState = CLUNET_SENDING_STATE_INIT;
 	// подождем 1.5Т, чтобы нас гарантированно могли остановить при передаче на линии со стороны другого устройства в процедуре внешнего прерывания
-	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + (CLUNET_T + CLUNET_T / 2);	// Планируем таймер, обычно почему-то прерывание срабатывает сразу
-	CLUNET_ENABLE_TIMER_COMP;					// Включаем прерывание сравнения таймера
+	CLUNET_TIMER_REG_OCR = CLUNET_TIMER_REG + (CLUNET_T + CLUNET_T / 2);
+	CLUNET_ENABLE_TIMER_COMP;	// Включаем прерывание сравнения таймера (передачу)
 }
 
 static inline char
@@ -181,6 +179,7 @@ ISR(CLUNET_TIMER_COMP_VECTOR)
 			case CLUNET_SENDING_STATE_PRIO2:
 	
 				CLUNET_TIMER_REG_OCR = now + ((clunetCurrentPrio & 1) ? CLUNET_0_T : CLUNET_1_T);
+				clunetSendingCurrentByte = clunetSendingCurrentBit = 0;	// Обнуляем счётчик
 				clunetSendingState++;	// К следующей фазе передачи данных
 				break;
 	
@@ -240,39 +239,11 @@ clunet_send(const uint8_t address, const uint8_t prio, const uint8_t command, co
 	}
 }
 
-/* Процедура прерывания переполнения таймера */
-ISR(CLUNET_TIMER_OVF_VECTOR)
-{
-	/* Считаем периоды переполнения таймера */
-	if (clunetTimerPeriods < 3)
-		clunetTimerPeriods++;
-	/* Слишком долго нет сигнала */
-	else
-	{
-		CLUNET_SEND_0; 	// А вдруг мы забыли линию отжать? Хотя по идее не должно...
-		clunetReadingState = CLUNET_READING_STATE_IDLE;
-		/* Если линия свободна */
-		if (!CLUNET_READING)
-			switch (clunetSendingState)
-			{
-			/* и ничего не передаем, то отключим прерывания переполнения */
-			case CLUNET_SENDING_STATE_IDLE:
-				CLUNET_DISABLE_TIMER_OVF;
-				break;
-			/* есть неотосланные данные - шлём, линия свободна */
-			case CLUNET_SENDING_STATE_WAITING_LINE:
-				clunet_start_send();
-			}
-	}
-}
-
 /* Процедура внешнего прерывания по фронту и спаду сигнала */
 ISR(CLUNET_INT_VECTOR)
 {
 
 	uint8_t now = CLUNET_TIMER_REG;		// Текущие значение таймера
-
-	CLUNET_ENABLE_TIMER_OVF;		// Активируем прерывания переполнения таймера при любой активности линии
 
 	/* Если линию прижало к нулю */
 	if (CLUNET_READING)
@@ -286,12 +257,15 @@ ISR(CLUNET_INT_VECTOR)
 			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;
 		}
 		clunetTimerStart = now;		// Запомним время начала сигнала
-		clunetTimerPeriods = 0;		// Сбросим счетчик периодов таймера
+		//clunetTimerPeriods = 0;		// Сбросим счетчик периодов таймера
 	}
 
 	/* Иначе если линию отпустило */
 	else
 	{
+		/* Надеемся на то, что линию освободило совсем и пробуем запланировать отправку, если нет, то конфликт будет 100% отработан */
+		if (clunetSendingState == CLUNET_SENDING_STATE_WAITING_LINE)
+			clunet_start_send();
 
 		uint8_t ticks = now - clunetTimerStart;	// Вычислим время сигнала в тиках таймера
 
