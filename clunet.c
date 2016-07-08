@@ -75,7 +75,7 @@ clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const
 	{
 		cli();
 		set_bit(WDTCR, WDE);
-		while(true);
+		while(1);
 	}
 
 	if ((clunetSendingState == CLUNET_SENDING_STATE_IDLE) || (clunetCurrentPrio <= CLUNET_PRIORITY_MESSAGE))
