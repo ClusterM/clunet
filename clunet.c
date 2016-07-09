@@ -211,6 +211,7 @@ ISR(CLUNET_INT_VECTOR)
 	/* Если линию прижало к нулю */
 	if (CLUNET_READING)
 	{
+		clunetTimerStart = now;		// Запомним время начала сигнала
 		/* Если мы в режиме передачи и прижали не мы, то замолкаем и ожидаем, тем более, что наши передаваемые данные уже битые */
 		/* Обеспечивается быстрая отработка ошибки на линии во избежание конфликтов */
 		if (clunetSendingState && !CLUNET_SENDING)
@@ -218,7 +219,6 @@ ISR(CLUNET_INT_VECTOR)
 			CLUNET_DISABLE_TIMER_COMP;
 			clunetSendingState = CLUNET_SENDING_STATE_WAITING_LINE;
 		}
-		clunetTimerStart = now;		// Запомним время начала сигнала
 	}
 
 	/* Иначе если линию отпустило */
