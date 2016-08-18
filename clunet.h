@@ -157,6 +157,9 @@
 #define CLUNET_COMMAND_DOOR_BELL 0x24
 /* Звонок в дверь */
 
+#define CLUNET_COMMAND_ALARM 0x25
+/* Тревога. 1 - включить, 0 - выключить */
+
 #define CLUNET_COMMAND_PING 0xFE
 /* Пинг, на эту команду устройство должно ответить следующей командой, возвратив весь буфер */
 
