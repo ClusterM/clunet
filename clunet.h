@@ -33,7 +33,7 @@
 #define CLUNET_OFFSET_DATA 4
 #define CLUNET_BROADCAST_ADDRESS 255
 
-#define CLUNET_COMMAND_DISCOVERY	0
+#define CLUNET_COMMAND_DISCOVERY	0x00
 /* Поиск других устройств, параметров нет */
 
 #define CLUNET_COMMAND_DISCOVERY_RESPONSE 0x01
