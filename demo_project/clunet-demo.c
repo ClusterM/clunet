@@ -4,6 +4,7 @@
 #include <util/delay.h>
 #include <avr/sleep.h>
 #include "clunet.h"
+#include "clunet_commands.h"
 
 void data_received(unsigned char src_address, unsigned char dst_address, unsigned char command, char* data, unsigned char size)
 {

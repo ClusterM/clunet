@@ -74,14 +74,15 @@ override LDFLAGS       = -Wl,-Map,$(PRG).map
 
 OBJCOPY        = avr-objcopy
 OBJDUMP        = avr-objdump
+SIZE           = avr-size
 
-all: $(PRG).elf lst text eeprom
+all: $(PRG).elf lst text eeprom size
 
-$(PRG).elf: $(OBJ)
+$(PRG).elf: $(OBJ) 
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # dependency:
-demo.o: demo.c
+$(PRG).o: clunet_config.h $(PRG).c 
 
 clean:
 	rm -rf *.o $(PRG).elf *.eps *.png *.pdf *.bak 
@@ -153,3 +154,6 @@ pdf: $(PRG).pdf
 program: hex
 #	$(CLUNET_FLASHER) $(CLUNET_IP) $(CLUNET_PORT) $(CLUNET_DEVICE_ID) $(PRG).hex
 	avrdude -V -p $(MCU_PROGRAMMER) -c avrisp2 -P usb -U flash:w:$(PRG).hex -U lfuse:w:0x$(LFUSE):m -U hfuse:w:0x$(HFUSE):m
+
+size: $(PRG).elf
+	$(SIZE) --mcu=$(MCU_TARGET) -C $(PRG).elf

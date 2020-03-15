@@ -9,13 +9,88 @@
 #include "clunet_config.h"
 #include "bits.h"
 #include "clunet.h"
+#include "clunet_commands.h"
 
 #include <stdint.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#define CLUNET_SENDING_STATE_IDLE 0
+#define CLUNET_SENDING_STATE_INIT 1
+#define CLUNET_SENDING_STATE_PRIO1 2
+#define CLUNET_SENDING_STATE_PRIO2 3
+#define CLUNET_SENDING_STATE_DATA 4
+#define CLUNET_SENDING_STATE_DONE 5
+#define CLUNET_SENDING_STATE_WAITING_LINE 8
+
+#define CLUNET_READING_STATE_IDLE 0
+#define CLUNET_READING_STATE_INIT 1
+#define CLUNET_READING_STATE_PRIO1 2
+#define CLUNET_READING_STATE_PRIO2 3
+#define CLUNET_READING_STATE_DATA 4
+
+#define CLUNET_OFFSET_SRC_ADDRESS 0
+#define CLUNET_OFFSET_DST_ADDRESS 1
+#define CLUNET_OFFSET_COMMAND 2
+#define CLUNET_OFFSET_SIZE 3
+#define CLUNET_OFFSET_DATA 4
+
+#ifndef CLUNET_T
+#define CLUNET_T ((F_CPU / CLUNET_TIMER_PRESCALER) / 15625)
+#endif
+#if CLUNET_T < 8
+#  error Timer frequency is too small, increase CPU frequency or decrease timer prescaler
+#endif
+#if CLUNET_T > 24
+#  error Timer frequency is too big, decrease CPU frequency or increase timer prescaler
+#endif
+
+#define CLUNET_0_T (CLUNET_T)
+#define CLUNET_1_T (3*CLUNET_T)
+#define CLUNET_INIT_T (10*CLUNET_T)
+
+#define CLUNET_CONCAT(a, b)            a ## b
+#define CLUNET_OUTPORT(name)           CLUNET_CONCAT(PORT, name)
+#define CLUNET_INPORT(name)            CLUNET_CONCAT(PIN, name)
+#define CLUNET_DDRPORT(name)           CLUNET_CONCAT(DDR, name)
+
+#ifndef CLUNET_WRITE_TRANSISTOR
+#  define CLUNET_SEND_1 CLUNET_DDRPORT(CLUNET_WRITE_PORT) |= (1 << CLUNET_WRITE_PIN)
+#  define CLUNET_SEND_0 CLUNET_DDRPORT(CLUNET_WRITE_PORT) &= ~(1 << CLUNET_WRITE_PIN)
+#  define CLUNET_SENDING (CLUNET_DDRPORT(CLUNET_WRITE_PORT) & (1 << CLUNET_WRITE_PIN))
+#  define CLUNET_SEND_INVERT CLUNET_DDRPORT(CLUNET_WRITE_PORT) ^= (1 << CLUNET_WRITE_PIN)
+#  define CLUNET_SEND_INIT { CLUNET_OUTPORT(CLUNET_WRITE_PORT) &= ~(1 << CLUNET_WRITE_PIN); CLUNET_SEND_0; }
+#else
+#  define CLUNET_SEND_1 CLUNET_OUTPORT(CLUNET_WRITE_PORT) |= (1 << CLUNET_WRITE_PIN)
+#  define CLUNET_SEND_0 CLUNET_OUTPORT(CLUNET_WRITE_PORT) &= ~(1 << CLUNET_WRITE_PIN)
+#  define CLUNET_SENDING (CLUNET_OUTPORT(CLUNET_WRITE_PORT) & (1 << CLUNET_WRITE_PIN))
+#  define CLUNET_SEND_INVERT CLUNET_OUTPORT(CLUNET_WRITE_PORT) ^= (1 << CLUNET_WRITE_PIN)
+#  define CLUNET_SEND_INIT { CLUNET_DDRPORT(CLUNET_WRITE_PORT) |= (1 << CLUNET_WRITE_PIN); CLUNET_SEND_0; }
+#endif
+
+#define CLUNET_READ_INIT { CLUNET_DDRPORT(CLUNET_READ_PORT) &= ~(1 << CLUNET_READ_PIN); CLUNET_OUTPORT(CLUNET_READ_PORT) |= (1 << CLUNET_READ_PIN); }
+#define CLUNET_READING (!(CLUNET_INPORT(CLUNET_READ_PORT) & (1 << CLUNET_READ_PIN)))
+
+#ifndef CLUNET_SEND_BUFFER_SIZE
+#  error CLUNET_SEND_BUFFER_SIZE is not defined
+#endif
+#ifndef CLUNET_READ_BUFFER_SIZE
+#  error CLUNET_READ_BUFFER_SIZE is not defined
+#endif
+#if CLUNET_SEND_BUFFER_SIZE > 255
+#  error CLUNET_SEND_BUFFER_SIZE must be <= 255
+#endif
+#if CLUNET_READ_BUFFER_SIZE > 255
+#  error CLUNET_READ_BUFFER_SIZE must be <= 255
+#endif
+
+
+
 void (*on_data_received)(uint8_t src_address, uint8_t dst_address, uint8_t command, char* data, uint8_t size) = 0;
+
+#ifdef SNIFFER_ENABLE
 void (*on_data_received_sniff)(uint8_t src_address, uint8_t dst_address, uint8_t command, char* data, uint8_t size) = 0;
+#endif
 
 volatile uint8_t clunet_sending_state = CLUNET_SENDING_STATE_IDLE;
 volatile uint8_t clunet_sending_data_length;
@@ -60,8 +135,10 @@ check_crc(const char* data, const uint8_t size)
 static inline void
 clunet_data_received(const uint8_t src_address, const uint8_t dst_address, const uint8_t command, char* data, const uint8_t size)
 {
+#ifdef SNIFFER_ENABLE
     if (on_data_received_sniff)
         (*on_data_received_sniff)(src_address, dst_address, command, data, size);
+#endif
 
     if (src_address == CLUNET_DEVICE_ID) return; // Игнорируем сообщения от самого себя!
 
@@ -298,7 +375,7 @@ clunet_init()
     CLUNET_READ_INIT;
     CLUNET_TIMER_INIT;
     CLUNET_INIT_INT;
-    char reset_source = MCUCSR;
+    char reset_source = RST_SRC;
     clunet_send (
         CLUNET_BROADCAST_ADDRESS,
         CLUNET_PRIORITY_MESSAGE,
@@ -306,7 +383,7 @@ clunet_init()
         &reset_source,
         sizeof(reset_source)
     );
-    MCUCSR = 0;
+    RST_SRC = 0;
 }
 
 /* Возвращает 0, если готов к передаче, иначе приоритет текущей задачи */
@@ -322,8 +399,11 @@ clunet_set_on_data_received(void (*f)(uint8_t src_address, uint8_t dst_address, 
     on_data_received = f;
 }
 
+
+#ifdef SNIFFER_ENABLE
 void
 clunet_set_on_data_received_sniff(void (*f)(uint8_t src_address, uint8_t dst_address, uint8_t command, char* data, uint8_t size))
 {
     on_data_received_sniff = f;
 }
+#endif
