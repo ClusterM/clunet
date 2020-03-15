@@ -57,4 +57,7 @@
 #define CLUNET_TIMER_COMP_VECTOR TIMER2_COMP_vect
 #define CLUNET_INT_VECTOR INT0_vect
 
+/* Reset src */
+#define RST_SRC  MCUCSR
+
 #endif
